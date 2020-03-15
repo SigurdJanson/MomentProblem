@@ -1,0 +1,67 @@
+---
+title: "Systematic Variations of Probability Distributions"
+author: "Dr. Jan Seifert"
+date: "12 3 2020"
+bibliography: ./pub/MomentProblem.bib
+csl: ./pub/apa-6th-edition.csl
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Purpose
+
+The idea is to explore how a set of probability distributions shall look like in order to investigate how it affects the bias of averaged correlations. Bishara & Hittner explored such a bias and they give directions [@Bishara2015][@Bishara2012]. But they had a strong focus on psychological research. Hence, they primarily simulated distributions, not because they wanted to cover the space as good as possible, but to focus on distributions that dominate psychological data.
+
+This is what Bishara & Hittner did:
+
+|                 |          | Flat \\ g    | Normal | Steep    |
+|:----------------|----------|:--------:|:------:|:--------:|
+| Normal          | skew = 0 | Uniform (0, -1.2), bimodal (0, -1.5)  | Normal (0, 0)  | Long-Tailed (0, 22.3) |
+| Skewed          | skew != 0| ?        | ?      | Weibull (1.1, 1.4) |
+| Extremely skewed|          | ?        | ?      | chi² (2.8, 12.0)   |
+
+As you can see, they did not vary the moments systematically. Several combination are not included and the values are hardly evenly distributed.
+
+```{r echo=FALSE}
+skew <- c(rep(0, 4), 1.1, 2.8)
+kurt <- c(-1.2, -1.5, 0, 22.3, 1.4, 12.0)
+plot(skew, kurt, xlim = c(), ylim = c(-2, 23))
+```
+
+
+If skewness = 0, the distribution is symmetrical. Bulmer (1979) — a classic — suggests this rule of thumb:
+
+* skewness < −1 or skewness > +1: the distribution is highly skewed.
+* skewness is in [−1, −½] or [½, 1]: the distribution is moderately skewed.
+* skewness is in ]−½, +½[: the distribution is approximately symmetric.
+
+I choose three levels of skewness: 0, 0.25, 1. And five levels of excess: -2, -0.5, 0, 5, 20.
+
+Now the trouble begins. How dou you get a probability distribution that fits a desired set of moments? Mathematicians pursue this using the term "Moment Problem". How can that be done when you do not even know which probability distribution can be generated the desired combination of moments?
+
+There are several ways to approach this with algorithms. The first one uses a probability distribution that can take many different shapes and fits it to the desired shape. One such distribution is the generalised lambda. Another approach is to ignore specific probability distributions and use a polynomial approximation. In some cases, that may be a reasonable approach.
+
+
+### The Generalised Lambda Distribution
+
+There are a number of packages that provide the generalised lambda distribution (GLD).
+
+* [GLDEX v2.0.0.3](https://www.rdocumentation.org/packages/GLDEX) by Steve Su
+* [gld](https://www.rdocumentation.org/packages/gld/versions/2.4.1) by [Robert King](https://tolstoy.newcastle.edu.au/~rking/index.html)
+* [gldist v2160.2](https://www.rdocumentation.org/packages/gldist/versions/2160.2) by Diethelm Wuertz and Yohan Chalabi
+* [gb](https://www.rdocumentation.org/packages/gb/versions/2.3.3) by Bin Wang
+
+
+
+### Polynomials
+
+Polynomials seem to have difficulties when distributions have infinite tails. I found a report by [@Hernandez2018] that provides R functions which I integrated here.
+
+
+
+## References
+
+Bulmer, M. G. 1979. Principles of Statistics. Dover.
