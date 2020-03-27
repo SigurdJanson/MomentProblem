@@ -1,7 +1,6 @@
 library(gld)
 library(GA)
 library(optimx)
-#library(plot3D)
 
 
 #' .v1f
@@ -273,7 +272,7 @@ FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 
 #' FindPDF_GLD
 #'
-#' @param Moments Vector holding the first four moments.
+#' @param TarMo Target moments, vector with the first four moments.
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
 #' are not reported. The default value is close to 1.5e-8.
 #' 
@@ -283,20 +282,20 @@ FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 #' @export
 #'
 #' @examples
-FindPDF_GLD <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
+FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
-  names(Moments) <- c("Mean", "Var", "Skew", "Kurt")
+  names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
   
-  # Symmetry: lambda3 = lambda4
-  # Only 4 parameter to estimate
-  if(Moments[3] == 0) 
+  # In case of symmetry: lambda3 = lambda4
+  # i.e. only 4 parameter to estimate
+  if(TarMo[3] == 0) 
     InitLambda <- runif(3, -0.25, 5)
   else
     InitLambda <- runif(4, -0.25, 5) # initial values to start optimisation
   
-  # Find Lambda3 and 4
+  # Genetic algorithm first: locate the general vicinity of the minimum
   GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
-           A = Moments, MinMax = 1, 
+           A = TarMo, MinMax = 1, 
            lower = rep(-0.25, length(InitLambda)), upper = rep(25, length(InitLambda)),
            popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15)
   #print(summary(GA))
@@ -304,13 +303,13 @@ FindPDF_GLD <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
   #GA@solution[1,] - c(-0.15, -0.15)
   print(GA@solution[1,])
   r <- optimx(GA@solution[1,], method = c("Nelder-Mead"), 
-              fn = .DeltaAllGLD, A = Moments, 
+              fn = .DeltaAllGLD, A = TarMo, 
               control = list(reltol = Tolerance, maxit = 50000) )
   ###TODO: check if successful, first
   Lambda[1] <- r$x1 
   Lambda[2] <- r$x2 
   Lambda[3] <- r$x3 
-  if(Moments[3] == 0) # Symmetry: lambda3 = lambda4
+  if(TarMo[3] == 0) # Symmetry: lambda3 = lambda4
     Lambda[4] <- Lambda[3]
   else
     Lambda[4] <- r$x4
@@ -324,11 +323,11 @@ FindPDF_GLD <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 
 l <- FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
 
- plotgld(lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4],
-         param = "fmkl", lambda5 = NULL, add = NULL, truncate = 0,
-         bnw = FALSE, col.or.type = 1, granularity = 10000, xlab = "x",
-         ylab = NULL, quant.probs = seq(0,1,.25), new.plot = NULL)
-# 
-# source("./SimPdf.R")
-# print(SimPdf( dnorm, dgl, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args2 = list(l) ))
+plotgld(lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4],
+        param = "fmkl", lambda5 = NULL, add = NULL, truncate = 0,
+        bnw = FALSE, col.or.type = 1, granularity = 10000, xlab = "x",
+        ylab = NULL, quant.probs = seq(0,1,.25), new.plot = NULL)
+
+#source("./SimPdf.R")
+#print(SimPdf( dnorm, dgl, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args2 = list(l) ))
 #print(MomentSet( rgl(1e7, lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4]) ))

@@ -1,5 +1,5 @@
 #' Mn
-#' Determination of the n-th moment of a sample.
+#' Determines the n-th raw moment of a sample.
 #' @param datasample A random sample
 #' @param n The requested moment
 #' @return A numeric value representing the requested moment.
@@ -47,13 +47,13 @@ MomentSet <- function(datasample, nmax=10) {
 
 #' SimPdf
 #' PDF Similitude Assessment between a given "PDF1" function and a reference
-#' "PDF2" function. "nsteps" between "xmin" and "xmax" will be used for the
-#' assessment. By default the assessment range is from -10 to 10.
-#' @param PDF1,PDF2 Two functions
-#' @param xmin,xmax Lower and upper end of the range in which the 
-#' distributions are compared
-#' @param nsteps 
-#' @param Args1,Args2 Extra arguments passed on to PDF1 / PDF2
+#' "PDF2" function.
+#' @param PDF1,PDF2 Two functions to be compared
+#' @param Xmin,Xmax Lower and upper end of the range in which the 
+#' distributions are compared (default is from -10 to 10)
+#' @param Steps Defines the resolution by specifying the number of 
+#' steps to be used between Xmin and Xmax.
+#' @param Args1,Args2 list of extra arguments passed on to PDF1 / PDF2.
 #' @return Named numeric vector containing the percentage of similitude.
 #' @export
 #' @author Hugo Hernandez; refactoring by Jan Seifert
@@ -62,7 +62,7 @@ MomentSet <- function(datasample, nmax=10) {
 #' Technical Report, DOI: 10.13140/RG.2.2.30177.35686
 #' @examples
 SimPdf <- function( PDF1, PDF2, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args2 = NULL ) {
-  x <- seq(Xmin, Xmax, Steps)
+  x <- seq(Xmin, Xmax, length.out = Steps+1)
   
   f1 <- match.fun(PDF1) # find PDF1 in environment
   f2 <- match.fun(PDF2) # find PDF2 in environment
@@ -70,12 +70,19 @@ SimPdf <- function( PDF1, PDF2, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args
   rho1 <- do.call(f1, c(list(x), Args1))
   rho2 <- do.call(f2, c(list(x), Args2))
   
-  rhomin <- pmin(rho1, rho2) # Minimum PD
+  # Integration and standardization (sum of minima / mean of values)
+  rhomin <- pmin(rho1, rho2) # The smaller value of both
+  Diff <- 200 * sum(rhomin) / (sum(rho1)+sum(rho2)) # Multiply with 100 to get %
+  names(Diff) = c("Similitude (%)")
   
-  # Integration and standardization (200 = 100 (to get %) * 2 * ...)
-  simil <- 200 * sum(rhomin) / (sum(rho1)+sum(rho2)) 
-  names(simil) = c("Similitude (%)")
-  
-  return(simil)
-}
+  # 
+  CrossCor <- ccf(rho1, rho2, plot = TRUE)
+  MaxCor = max(CrossCor$acf[,,1])
+  Lag = CrossCor$lag[,,1][which.max(CrossCor$acf[,,1])]
+  #return(res_max)
 
+  Result <- list(Similitude = Diff, ExplainedVar = MaxCor)
+  return(Result)
+}
+print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 0), Args2 = list(df = Inf)))
+print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 1), Args2 = list(df = Inf)))
