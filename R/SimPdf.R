@@ -45,44 +45,59 @@ MomentSet <- function(datasample, nmax=10) {
 }
 
 
+
+#' .DeltaPdf
+#' Computes the Czekanowski distance between two empirical 
+#' distribution functions.
+#' @param Edf1 
+#' @param Edf1 
+#'
+#' @return 
+.DeltaPdf <- function(Edf1, Edf2) {
+  # Integration and standardization (sum of minima / mean of values)
+  rhomin <- pmin(Edf1, Edf2) # The smaller value of both
+  Diff   <- 2 * sum(rhomin) / (sum(Edf1)+sum(Edf2)) 
+
+  return(Diff)
+}
+
 #' SimPdf
-#' PDF Similitude Assessment between a given "PDF1" function and a reference
-#' "PDF2" function.
-#' @param PDF1,PDF2 Two functions to be compared
+#' PDF Similitude Assessment between a given "Pdf1" function and a reference
+#' "Pdf2" function.
+#' @param Pdf1,Pdf2 Two functions to be compared
 #' @param Xmin,Xmax Lower and upper end of the range in which the 
 #' distributions are compared (default is from -10 to 10)
 #' @param Steps Defines the resolution by specifying the number of 
 #' steps to be used between Xmin and Xmax.
 #' @param Args1,Args2 list of extra arguments passed on to PDF1 / PDF2.
-#' @return Named numeric vector containing the percentage of similitude.
+#' @details Simple symmetrical measure of the distance between 
+#' two distributions.
+#' @note This function implements the Czekanowski distance. It was 
+#' designed as percentage but it can never become zero. Therefore, 
+#' the normaing to 100% has been removed from the code. 
+#' Ranges from 0 < result <= 1. Equal distributions result as 1.
 #' @export
 #' @author Hugo Hernandez; refactoring by Jan Seifert
 #' @references Hernandez, H. (2018). Comparison of Methods for the 
 #' Reconstruction of Probability Density Functions from Data Samples.
 #' Technical Report, DOI: 10.13140/RG.2.2.30177.35686
 #' @examples
-SimPdf <- function( PDF1, PDF2, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args2 = NULL ) {
-  x <- seq(Xmin, Xmax, length.out = Steps+1)
+SimPdf <- function( Pdf1, Pdf2, 
+                    Xrange = c(-10, 10), Steps = 1e5, 
+                    Args1 = NULL, Args2 = NULL ) {
+  if(length(Xrange) == 1) Xrange <- c(-Xrange, Xrange) * sign(Xrange)
+  x <- seq(Xrange[1], Xrange[2], length.out = Steps+1)
   
-  f1 <- match.fun(PDF1) # find PDF1 in environment
-  f2 <- match.fun(PDF2) # find PDF2 in environment
+  f1 <- match.fun(Pdf1) # find PDF1 in environment
+  f2 <- match.fun(Pdf2) # find PDF2 in environment
   # Calculation of pd's
   rho1 <- do.call(f1, c(list(x), Args1))
   rho2 <- do.call(f2, c(list(x), Args2))
   
-  # Integration and standardization (sum of minima / mean of values)
-  rhomin <- pmin(rho1, rho2) # The smaller value of both
-  Diff <- 200 * sum(rhomin) / (sum(rho1)+sum(rho2)) # Multiply with 100 to get %
-  names(Diff) = c("Similitude (%)")
+  Diff <- .DeltaPdf(rho1, rho2)
   
-  # 
-  CrossCor <- ccf(rho1, rho2, plot = TRUE)
-  MaxCor = max(CrossCor$acf[,,1])
-  Lag = CrossCor$lag[,,1][which.max(CrossCor$acf[,,1])]
-  #return(res_max)
-
-  Result <- list(Similitude = Diff, ExplainedVar = MaxCor)
+  Result <- Diff
   return(Result)
 }
-print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 0), Args2 = list(df = Inf)))
-print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 1), Args2 = list(df = Inf)))
+#print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 0), Args2 = list(df = Inf)))
+#print(SimPdf(dnorm, dt, Xmin=-100, Xmax=100, Args1 = list(mean = 2), Args2 = list(df = Inf)))

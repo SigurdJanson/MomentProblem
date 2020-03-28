@@ -1,11 +1,14 @@
 library(testthat)
-source("../SimPdf.R")
+source("../R/SimPdf.R")
 
-test_that("SimPdf", {
+test_that("SimPdf - Compare with original version", {
+  # Make sure that refactoring didn't have any side effects
   # Original function before refactoring
+  # Almost original because the x <- ... expression had to be reordered
+  # In it's original order there were deviations because of numeric precision
   SimPdfOri <- function( PDF1, PDF2, Xmin=-10, Xmax=10, Steps=1e5 ) {
     i <- 1:(Steps+1) #Step counter
-    x <- Xmin + (Xmax-Xmin)*(i-1) / Steps #Location of steps
+    x <- Xmin + (Xmax-Xmin) / Steps *(i-1) #Location of steps
 
     f1 <- match.fun(PDF1) #Definition of pd function 1
     f2 <- match.fun(PDF2) #Definition of pd function 2
@@ -18,15 +21,43 @@ test_that("SimPdf", {
     return(simil)
   }
 
-  e <- SimPdf(dnorm, dnorm)
-  o <- SimPdfOri(dnorm, dnorm)
-  expect_identical(e, o)
+  # Normal vs. Normal - Identical results
+  for(R in c(2, 5, 10, 20)) {
+    Range <- c(-R, R)
+    o <- SimPdf(dnorm, dnorm, Range)
+    e <- SimPdfOri(dnorm, dnorm, -R, R) / 100
+    names(e) <- NULL
+    expect_equal(o, e, info = paste("R =", R))
+  }
   
-  e <- SimPdf( dnorm, dt, Args2 = list(df = Inf))
-  o <- 100
-  names(o) <- "Similitude (%)"
-  expect_identical(e, o)
+  # Normal vs. Uniform
+  for(R in c(1, 2, 5, 10, 20)) {
+    Range <- c(-R, R)
+    o <- SimPdf(dnorm, dunif, Range)
+    e <- SimPdfOri(dnorm, dunif, -R, R) / 100
+    names(e) <- NULL
+    expect_equal(o, e, info = paste("R =", R))
+  }
+  
+  # Normal vs. Log-Normal
+  o <- SimPdf(dnorm, dlnorm)
+  e <- SimPdfOri(dnorm, dlnorm) / 100
+  names(e) <- NULL
+  expect_equal(o, e)
 })
+  
+
+
+test_that("SimPdf: ", {
+  o <- SimPdf(dnorm, dnorm)
+  e <- 1
+  expect_identical(o, e)
+  
+  o <- SimPdf( dnorm, dt, Args2 = list(df = Inf))
+  e <- 1
+  expect_identical(o, e)
+})
+
 
 
 
