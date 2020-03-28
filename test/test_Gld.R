@@ -1,5 +1,5 @@
 library(testthat)
-source("../MomentProblem.R")
+source("../R/FindPdf_GlD.R")
 
 test_that("GLD Helper Functions", {
   # .v1f

@@ -1,18 +1,22 @@
 #' polyPDF
-#' This function constructs a PD function from the moments 
+#' This function constructs a PD-function from the moments.
 #' 
 #' The output of this function is the PDF.
 #' Moments can be generated using the "momentset" function given in Appendix A.2.
-#' @param moments data frame, containing the moment order ("n") in one column 
-#' and their values ("moments") in the other. The data frame must be labelled.
+#' @param moments data frame, containing the moment order ("n") 
+#' in one column and their values ("moments") in the other. 
+#' The data frame must be labelled.
 #' @param xmin,xmax Lower and upper limit of the PDF.
-#' @param scale Scale factor can be used to transform data avoiding singularity (default = 1).
-#' @param disp If TRUE, the PDF will be plotted and the polynomial coefficients are shown. 
+#' @param scale Scale factor can be used to transform data avoiding 
+#' singularity (default = 1).
+#' @param disp If TRUE, the PDF will be plotted and the polynomial 
+#' coefficients are shown. 
 #' @author Hugo Hernandez; small refactoring by Jan Seifert
 #' @reference Hernandez, H. (2018). Comparison of Methods for the Reconstruction 
 #' of Probability Density Functions from Data Samples. Technical Report 
 #' @source https://t1p.de/wyhb
-polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1, disp = FALSE) {
+polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1, 
+                     plot = FALSE) {
   if (is.null(xmin) || is.null(xmax))
     stop("Please input 'xmin' and 'xmax' estimated values")
   
@@ -42,7 +46,7 @@ polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1, disp = FALSE)
     return(rho)
   } #end of function
   
-  if (disp == TRUE) {
+  if (isTRUE(plot)) {
     # Set coefficients names
     names(a)[1:2] <- c("(Intercept)", "x")
     if (length(a) > 2) {
@@ -64,6 +68,6 @@ polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1, disp = FALSE)
 }
 
 
-ListOfMoments <- list(data.frame(cbind(n = 1:8, moments = c(0, 1, 0, 3, 0, 15, 0, 105)))) #, 0, 945
-polyPDF(ListOfMoments[[1]], -16, +16, disp = TRUE)
-rm(ListOfMoments, polyPDF)
+#ListOfMoments <- list(data.frame(cbind(n = 1:8, moments = c(0, 1, 0, 3, 0, 15, 0, 105)))) #, 0, 945
+#polyPDF(ListOfMoments[[1]], -16, +16, disp = TRUE)
+#rm(ListOfMoments, polyPDF)

@@ -321,12 +321,12 @@ FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
 
 
 
-l <- FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
-
-plotgld(lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4],
-        param = "fmkl", lambda5 = NULL, add = NULL, truncate = 0,
-        bnw = FALSE, col.or.type = 1, granularity = 10000, xlab = "x",
-        ylab = NULL, quant.probs = seq(0,1,.25), new.plot = NULL)
+# l <- FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
+# 
+# plotgld(lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4],
+#         param = "fmkl", lambda5 = NULL, add = NULL, truncate = 0,
+#         bnw = FALSE, col.or.type = 1, granularity = 10000, xlab = "x",
+#         ylab = NULL, quant.probs = seq(0,1,.25), new.plot = NULL)
 
 #source("./SimPdf.R")
 #print(SimPdf( dnorm, dgl, Xmin=-10, Xmax=10, Steps=1e5, Args1 = NULL, Args2 = list(l) ))
