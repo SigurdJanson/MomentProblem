@@ -8,7 +8,7 @@
 #' Reconstruction of Probability Density Functions from Data Samples.
 #' Technical Report, DOI: 10.13140/RG.2.2.30177.35686
 #' @examples
-Mn <- function(datasample, n=0) {
+Mn <- function(datasample, n = 0) {
   N <- length(datasample) #Sample size
   Mn <- 0 #Initialize moment
   for (i in 1:N){
