@@ -1,7 +1,7 @@
 library(gld)
 library(GA)
 library(optimx)
-
+source("FindPdf_Root.R")
 
 #' .v1f
 #' helper function to compute component v1
@@ -319,6 +319,28 @@ FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
   return(Lambda)
 }
 
+
+
+
+
+
+
+New_ByMomentPdf.gld <- function( TarMo ) {
+  this <- New_ByMomentPdf.default( TarMo )
+  
+  NDim <- ifelse(TarMo[3] == 0, 3, 4) # symmetrical distribution
+  
+  this$Function   <- list(pdf = dgl, args = NULL) 
+  # Dimensions of the parameter space of the PDF
+  # * -0.25 is the fixed lower limit of the range of def.
+  # * +25 is arbitrary
+  this$ParamSpace <- rep(list(c(-0.25, 25)), NDim)
+  # Starting points for approximation algorithms
+  this$SpaceLaunch  <- NULL #rep(list(c(NULL)), NDim)
+  
+  class(this) <- append(class(this), "gld")
+  return(this)
+}
 
 
 # l <- FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
