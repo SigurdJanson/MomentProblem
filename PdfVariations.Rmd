@@ -4,6 +4,7 @@ author: "Dr. Jan Seifert"
 date: "12 3 2020"
 bibliography: ./pub/MomentProblem.bib
 csl: ./pub/apa-6th-edition.csl
+link-citations: yes
 output: html_document
 ---
 
@@ -42,17 +43,17 @@ I choose three levels of skewness: 0, 0.25, 1. And five levels of excess: -2, -0
 
 Now the trouble begins. How dou you get a probability distribution that fits a desired set of moments? Mathematicians pursue this using the term "Moment Problem". How can that be done when you do not even know which probability distribution can be generated the desired combination of moments?
 
-There are several ways to approach this with algorithms. The first one uses a probability distribution that can take many different shapes and fits it to the desired shape. One such distribution is the generalised lambda. Another approach is to ignore specific probability distributions and use a polynomial approximation. In some cases, that may be a reasonable approach.
+
+## Find Distribution from Moments
+
+There are several ways to approach this with algorithms. The easiest one: use an existing R package. PearsonDS [@Becker2017] offers fitting with the method of moments. This class of distributions can assume many different kinds of shapes based on it's type. Another probability distribution that can take many different shapes is the generalised lambda. Another approach is to ignore specific probability distributions and use a polynomial approximation. In some cases, that may be a reasonable approach.
 
 
 ### The Generalised Lambda Distribution
 
-There are a number of packages that provide the generalised lambda distribution (GLD).
+The variety of shapes offered by this distribution is enormous. it includes unimodal, U-shaped, J-shaped, S-shaped and monotone probability distribution functions. It includes symmetric and asymmetric shapes. It can be with smooth, abrupt, truncated, and if not truncated with long, medium or short tails.
 
-* [GLDEX v2.0.0.3](https://www.rdocumentation.org/packages/GLDEX) by Steve Su
-* [gld](https://www.rdocumentation.org/packages/gld/versions/2.4.1) by [Robert King](https://tolstoy.newcastle.edu.au/~rking/index.html)
-* [gldist v2160.2](https://www.rdocumentation.org/packages/gldist/versions/2160.2) by Diethelm Wuertz and Yohan Chalabi
-* [gb](https://www.rdocumentation.org/packages/gb/versions/2.3.3) by Bin Wang
+There are a number of packages that provide the generalised lambda distribution (GLD): [GLDEX](https://rdrr.io/cran/GLDEX/) [@Su2020], [gld](https://rdrr.io/cran/gld/) [@King2020], [gb](https://rdrr.io/cran/gb/) [@Wang2018] or [gldist](https://rdrr.io/cran/gldist/) (which I was not able to find on CRAN or other sources).
 
 
 

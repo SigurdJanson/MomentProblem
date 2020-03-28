@@ -1,15 +1,17 @@
 % Encoding: UTF-8
 
 @PhdThesis{AuYeung2003,
-  author   = {Susanna W. M. Au-Yeung},
-  school   = {Imperial College of Science,Technology and Medicine (University of London), Department of Computing},
-  title    = {Finding Probability Distributions From Moments},
-  year     = {2003},
-  address  = {London},
-  month    = sep,
-  type     = {mathesis},
-  abstract = {Using the moment sequence of a continuous probability function to regenerate the full distribution is a mathematical problem that has been investigated for many years. One method is to use a flexible distribution to approximate the densities by matching the moments of the two distributions. The results are of great interest, as they can be readily applied to response time analysis in concurrent systems, where obtaining moments is relatively easy but obtaining full distributions is hard. In this dissertation we look at the development of a tool that approximates densities when given the first four moments. The Generalized Lambda Distribution will be discussed in detail and we shall investigate the effectiveness of using it to approximate densities of well known probability distributions in addition to densities derived from response time analysis models.},
-  file     = {:D\:/Texte/02 Wissen/!Publikationen/2020 - MomentProblem/Au-Yeung (2003) Finding Probability Distributions From Moments.thesis.pdf:PDF},
+  author     = {Susanna W. M. Au-Yeung},
+  school     = {Imperial College of Science,Technology and Medicine (University of London), Department of Computing},
+  title      = {Finding Probability Distributions From Moments},
+  year       = {2003},
+  address    = {London},
+  month      = sep,
+  type       = {mathesis},
+  abstract   = {Using the moment sequence of a continuous probability function to regenerate the full distribution is a mathematical problem that has been investigated for many years. One method is to use a flexible distribution to approximate the densities by matching the moments of the two distributions. The results are of great interest, as they can be readily applied to response time analysis in concurrent systems, where obtaining moments is relatively easy but obtaining full distributions is hard. In this dissertation we look at the development of a tool that approximates densities when given the first four moments. The Generalized Lambda Distribution will be discussed in detail and we shall investigate the effectiveness of using it to approximate densities of well known probability distributions in addition to densities derived from response time analysis models.},
+  file       = {:D\:/Texte/02 Wissen/!Publikationen/2020 - MomentProblem/Au-Yeung (2003) Finding Probability Distributions From Moments.thesis.pdf:PDF},
+  keywords   = {read},
+  readstatus = {read},
 }
 
 @InProceedings{AuYeung2004,
@@ -38,7 +40,7 @@
   title        = {Reducing Bias and Error in the Correlation Coefficient Due to Nonnormality.},
   year         = {2015},
   issn         = {1552-3888},
-  month        = oct,
+  month        = {oct},
   pages        = {785--804},
   volume       = {75},
   abstract     = {It is more common for educational and psychological data to be nonnormal than to be approximately normal. This tendency may lead to bias and error in point estimates of the Pearson correlation coefficient. In a series of Monte Carlo simulations, the Pearson correlation was examined under conditions of normal and nonnormal data, and it was compared with its major alternatives, including the Spearman rank-order correlation, the bootstrap estimate, the Box-Cox transformation family, and a general normalizing transformation (i.e., rankit), as well as to various bias adjustments. Nonnormality caused the correlation coefficient to be inflated by up to +.14, particularly when the nonnormality involved heavy-tailed distributions. Traditional bias adjustments worsened this problem, further inflating the estimate. The Spearman and rankit correlations eliminated this inflation and provided conservative estimates. Rankit also minimized random error for most sample sizes, except for the smallest samples (  = 10), where bootstrapping was more effective. Overall, results justify the use of carefully chosen alternatives to the Pearson correlation when normality is violated.},
@@ -71,14 +73,103 @@
 }
 
 @TechReport{Hernandez2018,
-  author   = {H. Hernandez},
-  title    = {Comparison of Methods for the Reconstruction of Probability Density Functions from Data Samples},
-  year     = {2018},
-  number   = {FRR 2018-12},
-  type     = {techreport},
-  abstract = {Perhaps the best practice for predicting the outcome of any observable process is constructing robust mathematical models considering their most relevant factors. However, noise and randomness, caused by remaining factors not included in the model, will always be present. The behavior of random and randomistic variables (in a more general sense), can be mathematically described by the probability density function (PDF). It is therefore desirable to obtain PDFs for a measured variable, after a finite sample of data has been obtained. The identification of density functions fitting the data sample is denoted here as the reconstruction of the PDF. Such reconstruction is considered an inverse problem, since many different PDFs can satisfactorily describe the sample obtained. Furthermore, sampling always incorporates an inherent error in the process, given that the behavior of the sample may differ with respect to the behavior of the population, especially for small-sized samples. Thus, reconstructing PDFs is quite a challenging task. Different reconstruction methods, either based on the sample cumulative probability distribution or on the sample moments, are described and their performance is evaluated considering six different sets of data. Those test examples are samples obtained from populations with known probability distribution, allowing assessing the prediction capability of the reconstruction methods. If the type of distribution is known a priori, parametric reconstruction methods are found to be the best alternative. However, for unknown distributions, polynomial reconstruction methods provided good approximations for all cases considered. A selection of algorithms (in R language) used in the present work, is included in the Appendix.},
-  doi      = {10.13140/RG.2.2.30177.35686},
-  url      = {https://www.researchgate.net/profile/Hugo_Hernandez4/publication/329659261_Comparison_of_Methods_for_the_Reconstruction_of_Probability_Density_Functions_from_Data_Samples/links/5c13f92f92851c39ebedddbc/Comparison-of-Methods-for-the-Reconstruction-of-Probability-Density-Functions-from-Data-Samples.pdf},
+  author     = {H. Hernandez},
+  title      = {Comparison of Methods for the Reconstruction of Probability Density Functions from Data Samples},
+  year       = {2018},
+  number     = {FRR 2018-12},
+  type       = {techreport},
+  abstract   = {Perhaps the best practice for predicting the outcome of any observable process is constructing robust mathematical models considering their most relevant factors. However, noise and randomness, caused by remaining factors not included in the model, will always be present. The behavior of random and randomistic variables (in a more general sense), can be mathematically described by the probability density function (PDF). It is therefore desirable to obtain PDFs for a measured variable, after a finite sample of data has been obtained. The identification of density functions fitting the data sample is denoted here as the reconstruction of the PDF. Such reconstruction is considered an inverse problem, since many different PDFs can satisfactorily describe the sample obtained. Furthermore, sampling always incorporates an inherent error in the process, given that the behavior of the sample may differ with respect to the behavior of the population, especially for small-sized samples. Thus, reconstructing PDFs is quite a challenging task. Different reconstruction methods, either based on the sample cumulative probability distribution or on the sample moments, are described and their performance is evaluated considering six different sets of data. Those test examples are samples obtained from populations with known probability distribution, allowing assessing the prediction capability of the reconstruction methods. If the type of distribution is known a priori, parametric reconstruction methods are found to be the best alternative. However, for unknown distributions, polynomial reconstruction methods provided good approximations for all cases considered. A selection of algorithms (in R language) used in the present work, is included in the Appendix.},
+  doi        = {10.13140/RG.2.2.30177.35686},
+  keywords   = {skimmed},
+  readstatus = {skimmed},
+  url        = {https://www.researchgate.net/profile/Hugo_Hernandez4/publication/329659261_Comparison_of_Methods_for_the_Reconstruction_of_Probability_Density_Functions_from_Data_Samples/links/5c13f92f92851c39ebedddbc/Comparison-of-Methods-for-the-Reconstruction-of-Probability-Density-Functions-from-Data-Samples.pdf},
+}
+
+@Manual{Su2020,
+  title        = {GLDEX},
+  author       = {Steve Su},
+  note         = {R package version 2.0.0.7},
+  year         = {2020},
+  howpublished = {R package},
+  url          = {https://cran.r-project.org/web/packages/GLDEX/},
+}
+
+@Article{Freimer1988,
+  author    = {Marshall Freimer and Georgia Kollia and Govind S. Mudholkar and C. Thomas Lin},
+  journal   = {Communications in Statistics - Theory and Methods},
+  title     = {a study of the generalized tukey lambda family},
+  year      = {1988},
+  month     = {jan},
+  number    = {10},
+  pages     = {3547--3567},
+  volume    = {17},
+  doi       = {10.1080/03610928808829820},
+  publisher = {Informa {UK} Limited},
+}
+
+@Article{Fournier2007,
+  author    = {B. Fournier and N. Rupin and M. Bigerelle and D. Najjar and A. Iost and R. Wilcox},
+  journal   = {Computational Statistics {\&} Data Analysis},
+  title     = {Estimating the parameters of a generalized lambda distribution},
+  year      = {2007},
+  month     = {mar},
+  number    = {6},
+  pages     = {2813--2835},
+  volume    = {51},
+  doi       = {10.1016/j.csda.2006.09.043},
+  publisher = {Elsevier {BV}},
+}
+
+@Article{Lakhany2000,
+  author  = {Lakhany, Asif and Mausser, Helmut},
+  journal = {Algo research quarterly},
+  title   = {Estimating the parameters of the generalized lambda distribution},
+  year    = {2000},
+  number  = {3},
+  pages   = {47--58},
+  volume  = {3},
+}
+
+@Manual{Becker2017,
+  title    = {PearsonDS},
+  author   = {Martin Becker and Stefan Klößner},
+  note     = {R package version 1.1},
+  year     = {2017},
+  abstract = {Implementation of the Pearson distribution system, including full support for the (d,p,q,r)-family of functions for probability distributions and fitting via method of moments and maximum likelihood method.},
+  url      = {https://cran.r-project.org/web/packages/PearsonDS/},
+}
+
+@Manual{King2020,
+  title  = {gld},
+  author = {King, R.},
+  note   = {R package version 2.6.2},
+  year   = {2020},
+  url    = {https://cran.r-project.org/web/packages/gld/},
+}
+
+@Manual{Wuertz,
+  title  = {gldist},
+  author = {Wuertz, D. and Chalabi, Y.},
+  note   = {R package version 2160.2},
+}
+
+@Manual{Wang2018,
+  title  = {gb},
+  author = {Wang, B.},
+  note   = {R package version 2.3.3},
+  year   = {2018},
+  url    = {https://cran.r-project.org/web/packages/gb/},
+}
+
+@Article{Su2007,
+  author  = {Steve Su},
+  journal = {Journal of Statistical Software},
+  title   = {Fitting Single and Mixture of Generalized Lambda Distributions to Data via Discretized and Maximum Likelihood Methods: GLDEX in R},
+  year    = {2007},
+  month   = oct,
+  number  = {9},
+  volume  = {21},
+  doi     = {10.18637/jss.v021.i09},
 }
 
 @Comment{jabref-meta: databaseType:bibtex;}
