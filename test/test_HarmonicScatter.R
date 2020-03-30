@@ -1,5 +1,5 @@
 library(testthat)
-source("../R/LowDiscrepancyDistribution.R")
+source("../R/HarmonicScatter.R")
 
 
 test_that("Harmony: Compare Linear and Recursive Function", {
@@ -67,5 +67,18 @@ test_that("GetHarmonicPoints", {
   expect_equal(dim(o), c(N, Dim))
   expect_true(all(o < 1))
   expect_true(all(o > 0))
+  
+  
+  # "the minimum distance between two points consistently 
+  # falls between 0.549/sqrt(N) and 0.868/sqrt(N)".
+  Dim <- 2L
+  N <- 100L
+  o <- GetHarmonicPoints(Dim, N)
+  o <- dist(o) # dist() expects points in rows
+  o <- o #/ sqrt(N)
+  expect_gte(min(o), 0.549,
+             label = format(min(o), digits = 10))
+  expect_lte(min(o), 0.868,
+             label = format(min(o), digits = 10))
 })
 

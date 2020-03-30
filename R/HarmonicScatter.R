@@ -67,8 +67,8 @@
 #' Seed can be any number. A common default setting 
 #' is `Seed = 0`. but Roberts (2018) recommends `Seed = 0.5`. Change
 #' `Seed` to get varying results.
-#' @return A matrix with `Dim` columns and `N` rows. Values range
-#' from zero to one.
+#' @return A matrix with `Dim` columns and `N` rows (each row is 
+#' a position vector). Values range from zero to one.
 #' @export
 #'
 #' @references Roberts, M. (2018). The Unreasonable Effectiveness 
@@ -88,7 +88,6 @@ GetHarmonicPoints <- function( Dim, N = 20, Seed = 0.5 ) {
   for (d in 1:Dim) {
     Z[, d] <- (Seed + Alpha[d] * 1:N) %% 1
   }
-  #print(Z)
   return(Z)
 }
 
