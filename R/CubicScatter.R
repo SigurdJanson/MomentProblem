@@ -17,7 +17,7 @@
 #' GetCubicPoints(4, 2) # returns 16 points
 GetCubicPoints <- function( Dim, N ) {
   # PRECONDITIONS
-  if(Dim < 1) stop("This function cannot handle cubes in less than 1 dimensions")
+  if(Dim < 1) stop("Cannot handle cubes in less than 1 dimensions")
   Dim <- as.integer(Dim)
   if(N < 1) stop("At least 'N = 1' desired point must be set")
   N <- as.integer(N)
@@ -35,7 +35,7 @@ GetCubicPoints <- function( Dim, N ) {
   CubeCount  <- EdgeLenCut^N         # total number of sub-cubes
   
   # Get center coordinates of each sub-cube based on 1 dimension
-  BaseVector1D <- EdgeLen * 0:(CubeCount-1) + (EdgeLen/2)
+  BaseVector1D <- EdgeLen * 0:(EdgeLenCut-1) + (EdgeLen/2)
   # Expand single dimension to all dimensions
   CoordinateCombns <- replicate(Dim, BaseVector1D, simplify = FALSE)
   Coordinates <- data.matrix(expand.grid(CoordinateCombns))
@@ -43,6 +43,7 @@ GetCubicPoints <- function( Dim, N ) {
   
   return(Coordinates)
 }
+
 
 
 #' GetCubicPoints.Fragment
