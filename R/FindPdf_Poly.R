@@ -3,13 +3,13 @@
 #' 
 #' The output of this function is the PDF.
 #' Moments can be generated using the "momentset" function given in Appendix A.2.
-#' @param moments data frame, containing the moment order ("n") 
-#' in one column and their values ("moments") in the other. 
+#' @param moments data frame, containing the moment order (`n`) 
+#' in one column and their values (`moments`) in the other. 
 #' The data frame must be labelled.
 #' @param xmin,xmax Lower and upper limit of the PDF.
 #' @param scale Scale factor can be used to transform data avoiding 
 #' singularity (default = 1).
-#' @param disp If TRUE, the PDF will be plotted and the polynomial 
+#' @param disp If `TRUE`, the PDF will be plotted and the polynomial 
 #' coefficients are shown. 
 #' @author Hugo Hernandez; small refactoring by Jan Seifert
 #' @reference Hernandez, H. (2018). Comparison of Methods for the Reconstruction 
@@ -22,13 +22,13 @@ polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1,
   
   n <- length(moments$n) #Number of moments available
   degree <- n-1          #Degree of polynomial
-  A <- matrix(0,n,n)     #Initialize matrix of coefficients
-  B <- matrix(0,n,1)     #Initialize vector of independent terms
+  A <- matrix(0, n, n)   #Initialize matrix of coefficients
+  B <- matrix(0, n, 1)   #Initialize vector of independent terms
 
   for (i in 1:n) { #For each moment
     ni <- moments$n[i] #ni-th moment
     for (j in 1:n){ #For each power term
-      A[i,j] <- (((xmax*scale)^(ni+j))-((xmin*scale)^(ni+j)))/(ni+j)
+      A[i,j] <- (((xmax*scale)^(ni+j))-((xmin*scale)^(ni+j))) / (ni+j)
     }
     B[i] <- moments$moments[i] * scale^ni #Scale moments
   }
@@ -58,13 +58,19 @@ polyPDF <- function( moments, xmin = NULL, xmax = NULL, scale = 1,
     print(a)
     
     #PDF plot
-    i <- 1:1001
-    y <- xmin + (xmax-xmin) * (i-1)/1000
+    #-i <- 1:1001
+    #-y <- xmin + (xmax-xmin) * (i-1)/1000
+    y <- seq(xmin, xmax, length.out = 1000)
+    
     rho <- rhof(y) #Calculate density
-    plot(y, rho, type="l", col="blue", xlim = c(xmin, xmax), ylim = c(0, max(rho)),
+    plot(y, rho, type="l", col="blue", 
+         xlim = c(xmin, xmax), ylim = c(0, max(rho)),
          xlab = "Measurement values", ylab = "Probability Density")
+
+    invisible(rhof)
+  } else {
+    return(rhof)
   }
-  return(rhof)
 }
 
 
