@@ -1,7 +1,9 @@
 library(gld)
 library(GA)
 library(optimx)
-source("FindPdf_Root.R")
+source("../R/FindPdf_Root.R")
+
+
 
 #' .v1f
 #' helper function to compute component v1
@@ -220,7 +222,8 @@ source("FindPdf_Root.R")
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
 #' are not reported. The default value is close to 1.5e-8.
 #' 
-#' @details Moments are µ (mean), $\sigma$ (standard deviation), skewness and kurtosis.
+#' @details Moments are µ (mean), $\sigma$ (standard deviation), 
+#' skewness and kurtosis.
 #'
 #' @return
 #' @export
@@ -276,7 +279,8 @@ FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
 #' are not reported. The default value is close to 1.5e-8.
 #' 
-#' @details Moments are µ (mean), $\sigma$ (standard deviation), skewness and kurtosis.
+#' @details Moments are µ (mean), $\sigma$ (standard deviation), 
+#' skewness and kurtosis.
 #'
 #' @return
 #' @export
@@ -334,9 +338,12 @@ New_ByMomentPdf.gld <- function( TarMo ) {
   # Dimensions of the parameter space of the PDF
   # * -0.25 is the fixed lower limit of the range of def.
   # * +25 is arbitrary
-  this$ParamSpace <- rep(list(c(-0.25, 25)), NDim)
+  this$ParamSpace <- matrix(data = rep(c(-0.25, 25), NDim), 
+                            nrow = 2, byrow = FALSE,
+                            dimnames = list(c("from", "to"), NULL))
+    
   # Starting points for approximation algorithms
-  this$SpaceLaunch  <- NULL #rep(list(c(NULL)), NDim)
+  this$LaunchSpace  <- NULL #rep(list(c(NULL)), NDim)
   
   class(this) <- append(class(this), "gld")
   return(this)

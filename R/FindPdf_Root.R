@@ -1,11 +1,35 @@
-source("../R/LowDiscrepancyDistribution.R")
+source("../R/HarmonicScatter.R")
+source("../R/CubicScatter.R")
 
-#' This is data to be included in my package
+#' Data structure contaning the information required to approximate
+#' a PDF given specific moments.
 #'
 #' @name ByMomentPdf
 #' @docType data
 #' @format List with classes "ByMomentPdf" and a second class to indicate
 #' the generative function.
+#' \describe{
+#'   \item{Function}{PDF}
+#'   \item{Moments}{Observed moments (numeric vector).}
+#'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
+#'   because unknown.}
+#'   \item{TarMo}{The desired moments to be approximated 
+#'   (numeric vector).}
+#'   \item{DistaFu}{Distance measure between approximated function and 
+#'   target function.}
+#'   \item{DistaMo}{Distance measure between approximated moments and 
+#'   target function.}
+#'   \item{ParamSpace}{Range of definition that is allowed for 
+#'   parameters of the PDF. Numeric matrix with two coordinate 
+#'   vectors in the rows 'from' and 'to'. The number of columns 
+#'   equals the number of parameters, i.e. the dimensions of the 
+#'   paramter space.}
+#'   \item{LaunchSpace}{Starting points in the parameter space 
+#'   for approximative algorithms. Numeric matrix with as many
+#'   rows as there are starting points. The number of columns 
+#'   equals the number of parameters, i.e. the dimensions of the 
+#'   paramter space.}
+#' }
 #' @author Jan Seifert 
 #' @references 
 #' @keywords data
@@ -29,8 +53,8 @@ New_ByMomentPdf.default <- function( TarMo ) {
     DistaFu   = NULL,   # Distance between PDFs
     DistaMo   = NULL,   # Distance between moments
     # Dimensions of the parameter space of the PDF
-    ParamSpace = matrix(data = c(-Inf, Inf), ncol = 2, 
-                        dimnames = list(NULL, c("from", "to"))),
+    ParamSpace = matrix(data = c(-Inf, Inf), nrow = 2,
+                        dimnames = list(c("from", "to"), NULL)),
     # Starting points for approximation algorithms
     LaunchSpace = matrix(numeric(0)) # Matrix of coordinate vectors
   ) 
@@ -44,8 +68,11 @@ GetLaunchSpace <- function( Pdf, ... ) {
   UseMethod( "GetLaunchSpace" )
 }
 
+
+
 GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
-                                    Method = c("Random", "Even", "Manual") ) {
+                                        Method = c("Random", "Cubic", 
+                                                   "Harmonic", "Manual") ) {
   # PRECONDITIONS
   Method <- match.arg(Method)
   if (any(is.infinite(Pdf$ParamSpace))) 
@@ -58,29 +85,40 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
   # Random: 1 to n randomly set points
   if (Method == "Random") {
     LaunchPad <- numeric(0)
-    for(c in 1:Count) { # rep(list(c(from = -0.25, to = 25)), NDim)
+    for(c in 1:Count) { 
       Point <- runif(NDim, 
-                         min = Pdf$ParamSpace[, "from"],
-                         max = Pdf$ParamSpace[, "to"])
-      LaunchPad <- cbind(LaunchPad, Point)
+                     min = Pdf$ParamSpace["from", ],
+                     max = Pdf$ParamSpace["to", ])
+      LaunchPad <- rbind(LaunchPad, Point)
     }
+    dimnames(LaunchPad) <- NULL
     Pdf$LaunchSpace <- LaunchPad
   }
   
-  # Even: distribute n starting points evenly across the space
-  if (Method == "Even") {
+  # Cubic: distribute n starting points evenly across the space
+  if (Method == "Cubic") {
+    LaunchPad <- GetCubicPoints(NDim, Count)
+    # Scale points to 'ParamSpace'
+    Range <- Pdf$ParamSpace["to", ] - Pdf$ParamSpace["from", ]
+    LaunchPad <- LaunchPad * Range
+    LaunchPad <- LaunchPad + Pdf$ParamSpace["from", ]
+    Pdf$LaunchSpace <- LaunchPad
+  }
+  
+  # Harmonic: distribute n starting points evenly across the space
+  if (Method == "Harmonic") {
     LaunchPad <- GetHarmonicPoints(NDim, Count)
     # Scale points to 'ParamSpace'
-    Range <- Pdf$ParamSpace[, "to"] - Pdf$ParamSpace[, "from"]
-    LaunchPad <- LaunchPad + Pdf$ParamSpace[, "from"]
+    Range <- Pdf$ParamSpace["to", ] - Pdf$ParamSpace["from", ]
     LaunchPad <- LaunchPad * Range
+    LaunchPad <- LaunchPad + Pdf$ParamSpace["from", ]
     Pdf$LaunchSpace <- LaunchPad
   }
   
   # Manual: select starting points in heat map
   if (Method == "Manual") {
     LaunchPad <- list()
-    for(c in 1:Count) { # rep(list(c(from = -0.25, to = 25)), NDim)
+    for(c in 1:Count) { 
       stop("not yet implemented")
     }
     Pdf$SpaceLaunch <- LaunchPad
@@ -92,6 +130,6 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 
 ### TESTING #####
 x <- New_ByMomentPdf.default(c(0, 1))
-x$ParamSpace <- matrix(c(-5, -5, 5, 5), ncol = 2,
-                           dimnames = list(NULL, c("from", "to")))
-GetLaunchSpace( x, 2L, "R")
+x$ParamSpace <- matrix( c(-5, -5, -5, 5, 5, 5), ncol = 3, byrow = TRUE,
+                            dimnames = list(c("from", "to"), NULL) )
+x <- GetLaunchSpace( x, Count = 2L, "Random")
