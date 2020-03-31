@@ -209,20 +209,23 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 
 
 #' AddSolution
-#'
+#' Adds a new optimisation result to the solutions. 
 #' @param Pdf An object of class `ByMomentPdf`.
 #' @param LaunchPoint The index of a launching point referencing 
 #' the point in `Pdf$LaunchSpace`.
 #' @param SoluParam Numeric vector holding the parameters of
 #' the pd-generating function.
-#' @param Append 
-#'
+#' @param Add If `FALSE` existing solutions will be overwritten (default).
+#' Otherwise the new solution will be inserted in the list.
+#' 
+#' @note `AddSolution` makes sure that the list of solution is in the 
+#' right order of launch points.
 #' @return A class after adding the optimisation solution. 
 #' The classes of `Pdf` are preserved.
 #' @export
 #'
 #' @examples
-AddSolution <- function( Pdf, LaunchPoint, SoluParam, Append = FALSE, ... ) {
+AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
   # RESULT
   UseMethod("AddSolution")
 }
@@ -233,14 +236,23 @@ AddSolution <- function( Pdf, LaunchPoint, SoluParam, Append = FALSE, ... ) {
 AddSolution.default <-  function( Pdf, LaunchPoint, 
                                   SoluParam, Append = FALSE ) {
   # RESULT
-  if (!is.null(Pdf$ParamSolved) && 
-      nrow(Pdf$Pdf$ParamSolved) > 1 && 
-      isTRUE(Append)) {
-    #TODO: Check if already exists
-    #TODO: Add if it does not
+  if (isFALSE(Append) ||
+      is.null(Pdf$ParamSolved) || nrow(Pdf$Pdf$ParamSolved) <= 1) {
+    Pdf$ParamSolved <- list(LaunchPoint, SoluParam)
   } else {
-    #TODO: Add launch point
-    Pdf$ParamSolved <- SoluParam
+    # Check if already exists
+    LPs <- lapply(x, `[[`, 1) # get existing launch points
+    Pos <- which(LPs == LaunchPoint)
+    if (length(Pos) != 0) {
+      # Replace if it does
+      Pdf$ParamSolved[[Pos]] <- list(LaunchPoint, SoluParam)
+    } else {
+      # Find position and insert it at the right position
+      Pos <- which.max(LaunchPoint < LPs) - 1
+      Pdf$ParamSolved <- append(Pdf$ParamSolved, 
+                                list(LaunchPoint, SoluParam), 
+                                after = Pos)
+    }
   }
   return(Pdf)
 }
@@ -254,7 +266,8 @@ AddSolution.default <-  function( Pdf, LaunchPoint,
 #' @param LaunchPoint Index of the launch point is a reference to
 #' the row of `Pdf$SpaceLaunch`.
 #' @param ... Additional arguments to be passed to or from methods.
-#'
+#' @note This method has no default and must be implemented by 
+#' each child-class.
 #' @return A class after adding the optimisation solution. 
 #' The classes of `Pdf` are preserved.
 #' @export
@@ -305,7 +318,7 @@ EvaluatePdf.default <- function( Pdf, Preserve = c("all", "unique", "best") ) {
 ### TESTING #####
 x <- New_ByMomentPdf.default(c(0, 1))
 x$ParamSpace <- matrix( c(-5, -5, -5, 5, 5, 5), ncol = 3, byrow = TRUE,
-                            dimnames = list(c("from", "to"), NULL) )
+                           dimnames = list(c("from", "to"), NULL) )
 x <- GetLaunchSpace( x, Count = 2L, "Random")
 
 
