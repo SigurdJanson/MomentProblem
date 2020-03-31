@@ -216,7 +216,7 @@ source("../R/FindPdf_Root.R")
 
 
 
-#' FindPDF_GLD_A3A4
+#' .FindPDF_GLD_A3A4
 #'
 #' @param Moments Vector holding the first four moments.
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
@@ -229,7 +229,7 @@ source("../R/FindPdf_Root.R")
 #' @export
 #'
 #' @examples
-FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
+.FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
   names(Moments) <- c("Mean", "Var", "Skew", "Kurt")
 
@@ -273,7 +273,7 @@ FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 }
 
 
-#' FindPDF_GLD
+#' .FindPDF_GLD
 #'
 #' @param TarMo Target moments, vector with the first four moments.
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
@@ -286,7 +286,7 @@ FindPDF_GLD_A3A4 <- function( Moments, Tolerance = sqrt(.Machine$double.eps) ) {
 #' @export
 #'
 #' @examples
-FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
+.FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
   names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
   
@@ -336,9 +336,6 @@ FindPdf.gld( Pdf, LaunchPoint, Append = FALSE ) {
 }
 
 
-EvaluatePdf.dlg <- function( Pdf ) {
-  #TODO: compute the distances for all available solutions
-}
 
 
 #' New_ByMomentPdf.gld
@@ -371,7 +368,7 @@ New_ByMomentPdf.gld <- function( TarMo ) {
 }
 
 
-# l <- FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
+# l <- .FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)
 # 
 # plotgld(lambda1 = l[1], lambda2 = l[2], lambda3 = l[3], lambda4 = l[4],
 #         param = "fmkl", lambda5 = NULL, add = NULL, truncate = 0,

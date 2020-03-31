@@ -1,0 +1,53 @@
+@startuml
+class ByMomentPdf {
+  +{field} Function : list
+  +{field} Moments  : double(0)/matrix(double)
+  +{field} ParamSolved : double(0)/matrix(double)
+  +{field} TarFu    : list
+  +{field} TarMo    : double(n)
+  +{field} DistaFu  : matrix(double)
+  +{field} DistaMo  : matrix(double)
+  +{field} DistaMethod : char
+  +{field} ParamSpace  : matrix(double)
+  +{field} LaunchSpace : matrix(double)
+  +{field} Tolerance : double
+
+  +ByMomentPdf New_ByMomentPdf( TarMo )
+  +ByMomentPdf GetLaunchSpace(Pdf, ...)
+  +ByMomentPdf AddSolution(Pdf, ...)
+  +ByMomentPdf FindPdf(Pdf, ...)
+  +ByMomentPdf EvaluatePdf(Pdf, ...)
+}
+
+
+class gld {
+  +ByMomentPdf New_ByMomentPdf( TarMo )
+  +ByMomentPdf FindPdf(Pdf, ...)
+  .. hidden ..
+  #.FindPDF_GLD(...)
+  #.FindPDF_GLD_A3A4(...)
+  #.GLDTypeConstraints(...)
+  #.DeltaAllGLD(...)
+  #.DeltaA3A4GLD(...)
+  #.Alpha4( v )
+  #.Alpha3( v )
+  #.v1f( L3, L4 )
+  #.v21f( L3, L4 )
+  #.v31f( L3, L4 )
+  #.v41f( L3, L4 )
+}
+
+class poly {
+  +ByMomentPdf New_ByMomentPdf( TarMo )
+  +ByMomentPdf FindPdf(Pdf, ...)
+}
+
+class pearson {
+  +ByMomentPdf New_ByMomentPdf( TarMo )
+  +ByMomentPdf FindPdf(Pdf, ...)
+}
+
+  ByMomentPdf <|-- gld
+  ByMomentPdf <|-- pearson
+  ByMomentPdf <|-- poly
+@enduml

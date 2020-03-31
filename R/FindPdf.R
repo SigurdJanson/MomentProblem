@@ -28,7 +28,11 @@ GetPdf <- function( Pdf ) {
   
   # Converge for each launch point
   for(lp in 1:nrow(pdf$SpaceLaunch)) {
-    #TODO: save result <- FindPdf( Pdf, lp )
+    #TODO: save result <- FindPdf( Pdf, lp, Append = TRUE )
   }
+  # Compute distances
   
+  # probably provide histogram of distances across solutions
+  
+  # Present best solution(s)
 }

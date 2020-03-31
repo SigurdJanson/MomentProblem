@@ -11,6 +11,8 @@ source("./R/CubicScatter.R")
 #' \describe{
 #'   \item{Function}{PDF} #TODO: Collection containing PDF, CDF & RNG functions
 #'   \item{Moments}{Observed moments (numeric vector).}
+#'   \item{ParamSolved}{A single numeric vector or a matrix of solutions
+#'   with each row being a solution of function parameters.}
 #'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
 #'   because unknown. List with the format `list(Function, List-of-Args)`.}
 #'   \item{TarMo}{The desired moments to be approximated 
@@ -38,6 +40,13 @@ source("./R/CubicScatter.R")
 NULL
 
 
+#' Title
+#' Constructor for parent class `ByMomentPdf`.
+#' @param TarMo Numeric vector of target moments.
+#' @return
+#' @export
+#'
+#' @examples
 New_ByMomentPdf <- function( TarMo ) {
   New_ByMomentPdf.default( TarMo )
 }
@@ -46,20 +55,21 @@ New_ByMomentPdf <- function( TarMo ) {
 New_ByMomentPdf.default <- function( TarMo ) {
   this <- list(
     # Pdf
-    Function  = NULL,   # PDF: NULL if unknown or a list(Func, Args)
-    Moments   = NULL,   # Moments
+    Function    = NULL,   # PDF: NULL if unknown or a list(Func, Args)
+    Moments     = NULL,   # Moments
+    ParamSolved = NULL,
     # Target function
-    TarFu     = NULL,   # PDF: NULL if unknown or a list(Func, Args)
-    TarMo     = TarMo,  # Target moments
+    TarFu       = NULL,   # PDF: NULL if unknown or a list(Func, Args)
+    TarMo       = TarMo,  # Target moments
     # Distance to target
-    DistaFu   = NULL,   # Distance between PDFs
-    DistaMo   = NULL,   # Distance between moments
+    DistaFu     = NULL,   # Distance between PDFs
+    DistaMo     = NULL,   # Distance between moments
     # Dimensions of the parameter space of the PDF
-    ParamSpace = matrix(data = c(-Inf, Inf), nrow = 2,
+    ParamSpace  = matrix(data = c(-Inf, Inf), nrow = 2,
                         dimnames = list(c("from", "to"), NULL)),
     # Starting points for approximation algorithms
     LaunchSpace = matrix(numeric(0)), # Matrix of coordinate vectors
-    Tolerance = sqrt(.Machine$double.eps)
+    Tolerance   = sqrt(.Machine$double.eps)
   ) 
   
   class(this) <- append(class(this), "ByMomentPdf")
@@ -140,7 +150,9 @@ AddSolution <- function( Pdf, SoluParam, Append = FALSE ) {
 AddSolution.default <-  function( Pdf, LaunchPoint, 
                                   SoluParam, Append = FALSE ) {
   # RESULT
-  if (isTRUE(Append)) {
+  if (!is.null(Pdf$ParamSolved) && 
+      nrow(Pdf$Pdf$ParamSolved) > 1 && 
+      isTRUE(Append)) {
     
   } else {
     
@@ -170,6 +182,14 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 }
 
 
+EvaluatePdf <- function( Pdf ) {
+  UseMethod("EvaluatePdf")
+}
+
+EvaluatePdf.default <- function( Pdf ) {
+  #TODO: compute the distances for all available solutions
+}
+
 
 
 ### TESTING #####
@@ -180,7 +200,7 @@ x <- GetLaunchSpace( x, Count = 2L, "Random")
 
 
 #' @param TarMo Target moments as vector. See details.
-#' @param mMethod Function generating algorithm. Available are the 
+#' @param Method Function generating algorithm. Available are the 
 #' generalised lambda distribution (`gld`), the Pearson distribution
 #' (`pearson`) or a polynomial solution (`poly`).
 #' @param Launch
