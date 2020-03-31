@@ -10,7 +10,7 @@ Imagine a situation when you want a probability distribution with a specified se
 
 ## Architecture
 
-It's quite simple. One base class provides the full data structure and the basic functionality shared by all approximations. Some of the functionality required to accomplish an approximation is hidden inside
+It's quite simple. One base class provides the full data structure and the basic functionality shared by all approximations. Some of the functionality required to accomplish an approximation is hidden inside additional functions. Technically, they are not part of the class.
 
 ![Class Diagram](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/SigurdJanson/MomentProblem/master/uml/bymomentpdf.puml)
 
