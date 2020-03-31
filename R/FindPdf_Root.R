@@ -9,7 +9,9 @@ source("./R/CubicScatter.R")
 #' @format List with classes "ByMomentPdf" and a second class to indicate
 #' the generative function.
 #' \describe{
-#'   \item{Function}{PDF} #TODO: Collection containing PDF, CDF & RNG functions
+#'   \item{Function}{String holding the base name of generating 
+#'   distribution function. Must follow the R conventions of probability
+#'   functions, i.e. for a uniform distribtion `Function == "runif"`.
 #'   \item{Moments}{Observed moments (numeric vector).}
 #'   \item{ParamSolved}{A single numeric vector or a matrix of solutions
 #'   with each row being a solution of function parameters.}
@@ -37,21 +39,22 @@ source("./R/CubicScatter.R")
 #' @author Jan Seifert 
 #' @references 
 #' @keywords data
-NULL
+#NULL
 
 
-#' Title
+#' New_ByMomentPdf
 #' Constructor for parent class `ByMomentPdf`.
 #' @param TarMo Numeric vector of target moments.
-#' @return
+#' @return Class `ByMomentPdf`
 #' @export
-#'
+#' @author Jan Seifert 
 #' @examples
 New_ByMomentPdf <- function( TarMo ) {
   New_ByMomentPdf.default( TarMo )
 }
 
-
+#' New_ByMomentPdf.default
+#' @describeIn New_ByMomentPdf
 New_ByMomentPdf.default <- function( TarMo ) {
   this <- list(
     # Pdf
@@ -78,11 +81,74 @@ New_ByMomentPdf.default <- function( TarMo ) {
 
 
 
+dPdf <- function(Pdf, x, ParamSet, ...) {
+  UseMethod("dPdf")
+}
+
+dPdf.default <- function(Pdf, x, ParamSet, ...) {
+  FName <- paste0("d", Pdf$Function)
+  if(is.list(ParamSet)) Param <- ParamSet
+  else Param <- Pdf$ParamSolved[ParamSet, ]
+  
+  do.call( FName, append(list(x = x), c(Param, list(...))) )
+}
+
+pPdf <- function(Pdf, q, ParamSet, ...) {
+  UseMethod("pPdf")
+}
+
+pPdf.default <- function(Pdf, q, ParamSet, ...) {
+  FName <- paste0("p", Pdf$Function)
+  if(is.list(ParamSet)) Param <- ParamSet
+  else Param <- Pdf$ParamSolved[ParamSet, ]
+  
+  do.call( FName, append(list(q = q), Param, ...) )
+}
+
+qPdf <- function(Pdf, p, ParamSet, ...) {
+  UseMethod("qPdf")
+}
+
+qPdf.default <- function(Pdf, p, ParamSet, ...) {
+  FName <- paste0("q", Pdf$Function)
+  if(is.list(ParamSet)) Param <- ParamSet
+  else Param <- Pdf$ParamSolved[ParamSet, ]
+  
+  do.call( FName, append(list(p = p), Param, ...) )
+}
+
+rPdf <- function(Pdf, p, ParamSet, ...) {
+  UseMethod("rPdf")
+}
+
+rPdf.default <- function(Pdf, n, ParamSet, ...) {
+  FName <- paste0("r", Pdf$Function)
+  if(is.list(ParamSet)) Param <- ParamSet
+  else Param <- Pdf$ParamSolved[ParamSet, ]
+  
+  do.call( FName, append(list(n = n), Param, ...) )
+}
+
+
+
+#' GetLaunchSpace
+#'
+#' @param Pdf An object of class `ByMomentPdf`.
+#' @param Count Number of desired launch points.
+#' @param Method A method to generate launch points.
+#'
+#' @return A class after adding the optimisation solution. 
+#' The classes of `Pdf` are preserved.
+#' @export
+#'
+#' @examples
 GetLaunchSpace <- function( Pdf, ... ) {
   UseMethod( "GetLaunchSpace" )
 }
 
 
+#' GetLaunchSpace.ByMomentPdf
+#' @describeIn GetLaunchSpace
 GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
                                         Method = c("Random", "Cubic", 
                                                    "Harmonic", "Manual") ) {
@@ -141,33 +207,56 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 }
 
 
-AddSolution <- function( Pdf, SoluParam, Append = FALSE ) {
+
+#' AddSolution
+#'
+#' @param Pdf An object of class `ByMomentPdf`.
+#' @param LaunchPoint The index of a launching point referencing 
+#' the point in `Pdf$LaunchSpace`.
+#' @param SoluParam Numeric vector holding the parameters of
+#' the pd-generating function.
+#' @param Append 
+#'
+#' @return A class after adding the optimisation solution. 
+#' The classes of `Pdf` are preserved.
+#' @export
+#'
+#' @examples
+AddSolution <- function( Pdf, LaunchPoint, SoluParam, Append = FALSE, ... ) {
   # RESULT
   UseMethod("AddSolution")
 }
 
 
+#' AddSolution.default
+#' @describeIn AddSolution
 AddSolution.default <-  function( Pdf, LaunchPoint, 
                                   SoluParam, Append = FALSE ) {
   # RESULT
   if (!is.null(Pdf$ParamSolved) && 
       nrow(Pdf$Pdf$ParamSolved) > 1 && 
       isTRUE(Append)) {
-    
+    #TODO: Check if already exists
+    #TODO: Add if it does not
   } else {
-    
+    #TODO: Add launch point
+    Pdf$ParamSolved <- SoluParam
   }
+  return(Pdf)
 }
 
 
 #' FindPdf
+#' Find solutions for probability-distribution generating 
+#' function of `Pdf`.
 #' Generic function for all sub-classes of `ByMomentPdf`.
 #' @param Pdf An object of class `ByMomentPdf` or a sub-class.
 #' @param LaunchPoint Index of the launch point is a reference to
 #' the row of `Pdf$SpaceLaunch`.
 #' @param ... Additional arguments to be passed to or from methods.
 #'
-#' @return
+#' @return A class after adding the optimisation solution. 
+#' The classes of `Pdf` are preserved.
 #' @export
 #'
 #' @examples
@@ -182,12 +271,33 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 }
 
 
-EvaluatePdf <- function( Pdf ) {
+
+#' EvaluatePdf
+#' Assess the quality of solutions stored in `Pdf`. 
+#' Generic function for all sub-classes of `ByMomentPdf`.
+#' @param Pdf An object of class `ByMomentPdf` or a sub-class.
+#' @param Preserve 
+#' @param ... Additional arguments to be passed to or from methods.
+#'
+#' @return A class after adding the optimisation solution. 
+#' The classes of `Pdf` are preserved.
+#' @export
+#'
+#' @examples
+EvaluatePdf <- function( Pdf, ... ) {
   UseMethod("EvaluatePdf")
 }
 
-EvaluatePdf.default <- function( Pdf ) {
-  #TODO: compute the distances for all available solutions
+#' EvaluatePdf.default
+#' @describeIn EvaluatePdf
+EvaluatePdf.default <- function( Pdf, Preserve = c("all", "unique", "best") ) {
+  Solutions <- unique(Pdf$ParamSolved, MARGIN = 1) 
+  
+  #TODO: Compute the distances for all available solutions
+  for(r in nrow(Solutions)) {
+    
+  }
+  #TODO: store information
 }
 
 

@@ -1,6 +1,8 @@
 library(testthat)
 source("../R/FindPdf_Root.R")
 
+
+## CONSTRUCTOR ----
 test_that("New_ByMomentPdf.default", {
   TargetMoments <- c(0, 1, 0, 3, 0, 15)
   # 'New_ByMomentPdf' only calls 'New_ByMomentPdf.default'
@@ -9,9 +11,10 @@ test_that("New_ByMomentPdf.default", {
   
   o <- New_ByMomentPdf.default(TargetMoments)
   expect_s3_class(o, c("list", "ByMomentPdf"))
-  expect_named( o, c("Function", "Moments", "TarFu", "TarMo", 
+  expect_named( o, c("Function", "Moments", "ParamSolved", 
+                     "TarFu", "TarMo", 
                      "DistaFu", "DistaMo",
-                     "ParamSpace", "LaunchSpace"))
+                     "ParamSpace", "LaunchSpace", "Tolerance"))
   expect_identical(o$TarMo, TargetMoments)
   expect_type(o$ParamSpace,  "double")
   expect_equal(dim(o$ParamSpace),  c(2, 1))
@@ -21,6 +24,8 @@ test_that("New_ByMomentPdf.default", {
 
 
 
+
+## GET LAUNCH SPACE ----
 test_that("GetLaunchSpace.default: Preconditions", {
   TargetMoments <- c(0, 1, 0, 3, 0, 15)
   Pdf <- New_ByMomentPdf.default(TargetMoments)
@@ -98,3 +103,69 @@ test_that("GetLaunchSpace.default: Result", {
 })
 
 #TODO: devise test with non-overlapping dimensions in param space
+
+
+
+## PROBABILITY FUNCTION CALLS ----
+test_that("Density, distribution, quantile & random function", {
+  # Pdf <- New_ByMomentPdf(c(0, 1, 0, 3, 0, 15))
+  # Pdf$Function <- "norm"
+  # print(dPdf(Pdf, -5:5, ParamSet = NULL, mean = 2, sd = 0.1))
+  # print(dPdf(Pdf, -5:5, ParamSet = list(mean = 2, sd = 0.1)))
+  
+  Pdf <- New_ByMomentPdf(c(0, 1, 0, 3, 0, 15))
+  
+  # First form, normal distribution
+  # Not realistic but good enough for testing
+  Pdf$Function <- "norm"
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = list(mean = 0, sd = 1)),
+                dnorm(-5:5, mean = 0, sd = 1) )
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = list(mean = 2, sd = 0.1)),
+                dnorm(-5:5, mean = 2, sd = 0.1) )
+  # Second form, normal distribution
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = NULL, mean = 0, sd = 1),
+                dnorm(-5:5, mean = 0, sd = 1) )
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = NULL, mean = 2, sd = 0.1),
+                dnorm(-5:5, mean = 2, sd = 0.1) )
+  
+  # First form, Generalised Gamma distribution
+  require(gld)
+  Pdf$Function <- "gl"
+  Lambda <- list(lambda1 = 0, lambda2 = 0.5, lambda3 = 0.5, lambda4 = 0.5)
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = Lambda),
+                dgl(-5:5, unlist(Lambda)) )
+  Lambda <- list(lambda1 = -0.1, lambda2 = 0.1, lambda3 = -0.1, lambda4 = 0.1)
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = Lambda),
+                dgl(-5:5, unlist(Lambda)) )
+
+  q <- seq(0, 1, by = 0.01)
+  Lambda <- list(lambda1 = 0, lambda2 = 0.5, lambda3 = 0.5, lambda4 = 0.5)
+  expect_equal( pPdf(Pdf, q, ParamSet = Lambda),
+                pgl(q, unlist(Lambda)) )
+  Lambda <- list(lambda1 = -0.1, lambda2 = 0.1, lambda3 = -0.1, lambda4 = 0.1)
+  expect_equal( pPdf(Pdf, q, ParamSet = Lambda),
+                pgl(q, unlist(Lambda)) )
+  
+  p <- seq(0, 1, by = 0.01)
+  Lambda <- list(lambda1 = 0, lambda2 = 0.5, lambda3 = 0.5, lambda4 = 0.5)
+  expect_equal( qPdf(Pdf, p, ParamSet = Lambda),
+                qgl(p, unlist(Lambda)) )
+  Lambda <- list(lambda1 = -0.1, lambda2 = 0.1, lambda3 = -0.1, lambda4 = 0.1)
+  expect_equal( qPdf(Pdf, p, ParamSet = Lambda),
+                qgl(p, unlist(Lambda)) )
+  
+  n <- 20
+  Lambda <- list(lambda1 = 0, lambda2 = 0.5, lambda3 = 0.5, lambda4 = 0.5)
+  set.seed(seed = 4321)
+  o <- rPdf(Pdf, n, ParamSet = Lambda)
+  set.seed(seed = 4321)
+  e <- rgl(n, unlist(Lambda)) 
+  expect_equal( o, e )
+  
+  Lambda <- list(lambda1 = -0.1, lambda2 = 0.1, lambda3 = -0.1, lambda4 = 0.1)
+  set.seed(seed = 4321)
+  o <- rPdf(Pdf, n, ParamSet = Lambda)
+  set.seed(seed = 4321)
+  e <- rgl(n, unlist(Lambda)) 
+  expect_equal( o, e )
+})

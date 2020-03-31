@@ -88,6 +88,7 @@ source("../R/FindPdf_Root.R")
   return(alpha4)
 }
 
+
 #' .Delta_GLD
 #' Helper function to compute the distance from the expected values of the 
 #' third and fourth moment.
@@ -352,7 +353,7 @@ New_ByMomentPdf.gld <- function( TarMo ) {
   
   NDim <- ifelse(TarMo[3] == 0, 3, 4) # symmetrical distribution
   
-  this$Function   <- list(pdf = dgl, args = NULL)
+  this$Function   <- "gl"
   # Dimensions of the parameter space of the PDF
   # * -0.25 is the fixed lower limit of the range of def.
   # * +25 is arbitrary
