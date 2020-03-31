@@ -1,7 +1,7 @@
 library(gld)
 library(GA)
 library(optimx)
-source("../R/FindPdf_Root.R")
+source("./R/FindPdf_Root.R")
 
 
 
@@ -327,18 +327,6 @@ source("../R/FindPdf_Root.R")
 
 
 
-FindPdf.gld( Pdf, LaunchPoint, Append = FALSE ) {
-  # Get a resulting PDF
-  Lambda <- FindPDF_GLD( Pdf$TarMo, Pdf$Tolerance )
-  
-  # Determine distance to desired solution
-  AddSolution( Pdf, LaunchPoint, 
-               SoluParam = Lambda, Append = Append )
-}
-
-
-
-
 #' New_ByMomentPdf.gld
 #' Constructor of class `gld`.
 #' @param TarMo Target moments, vector with the first four moments.
@@ -360,13 +348,60 @@ New_ByMomentPdf.gld <- function( TarMo ) {
   this$ParamSpace <- matrix(data = rep(c(-0.25, 25), NDim),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
-    
+  
   # Starting points for approximation algorithms
   this$LaunchSpace  <- NULL
   
   class(this) <- append(class(this), "gld")
   return(this)
 }
+
+
+PdfMoments.gld <- function(Pdf, Solution = 1) {
+  if(length(Solution) == 1) {
+    LPs <- lapply(x, `[[`, 1) # get existing launch points
+    Pos <- which(LPs == LaunchPoint)
+    if (length(Pos) != 0) {
+      Solution <- Pdf$ParamSolved[Pos]
+    } else {
+      stop(paste("Solution", Solution, "not found"))
+    }
+  }
+    
+  Alpha <- numeric(4)
+  
+  v1 <- .v1f(Solution[3], Solution[4])
+  v2 <- .v2f(Solution[3], Solution[4])
+  v3 <- .v3f(Solution[3], Solution[4])
+  v4 <- .v4f(Solution[3], Solution[4])
+  
+  # based on eqn 27: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
+  Alpha[2] <- (v2 - v1^2) / Solution[2]^2
+  # based on eqn 28: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
+  Alpha[1] <- Solution[1] - 1/Solution[2] * 
+    ( (1/(Solution[3]+1)) + (1/(Solution[4]+1)) )
+  Alpha[3] <- .Alpha3(c(v1, v2, v3, v4))
+  if(Alpha[3] != 0) 
+    Alpha[4] <- .Alpha4(c(v1, v2, v3, v4))
+  else
+    Alpha[4] <- Alpha[3] # When symmetry: L3 = L4
+  
+  return(Alpha)
+}
+
+
+
+FindPdf.gld <- function( Pdf, LaunchPoint, Append = FALSE ) {
+  # Get a resulting PDF
+  Lambda <- .FindPDF_GLD( Pdf$TarMo, Pdf$Tolerance )
+  
+  # Determine distance to desired solution
+  AddSolution( Pdf, LaunchPoint, 
+               SoluParam = Lambda, Append = Append )
+}
+
+
+
 
 
 # l <- .FindPDF_GLD(c(0, 1, 0, 3), Tolerance = 1E-6)

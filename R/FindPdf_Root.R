@@ -11,10 +11,13 @@ source("./R/CubicScatter.R")
 #' \describe{
 #'   \item{Function}{String holding the base name of generating 
 #'   distribution function. Must follow the R conventions of probability
-#'   functions, i.e. for a uniform distribtion `Function == "runif"`.
-#'   \item{Moments}{Observed moments (numeric vector).}
-#'   \item{ParamSolved}{A single numeric vector or a matrix of solutions
-#'   with each row being a solution of function parameters.}
+#'   functions, i.e. for a uniform distribution `Function == "unif"`.
+#'   \item{Moments}{{A list of moments for each solution. 
+#'   The first list element contains a reference to the solution. The
+#'   second holds a vectors of moments.}}
+#'   \item{ParamSolved}{A list of parameters for each solution. 
+#'   The first list element contains a reference to the solution. The
+#'   second holds a vectors of parameters.}
 #'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
 #'   because unknown. List with the format `list(Function, List-of-Args)`.}
 #'   \item{TarMo}{The desired moments to be approximated 
@@ -39,7 +42,7 @@ source("./R/CubicScatter.R")
 #' @author Jan Seifert 
 #' @references 
 #' @keywords data
-#NULL
+
 
 
 #' New_ByMomentPdf
@@ -80,7 +83,7 @@ New_ByMomentPdf.default <- function( TarMo ) {
 }
 
 
-
+# Probability distribution functions ----
 dPdf <- function(Pdf, x, ParamSet, ...) {
   UseMethod("dPdf")
 }
@@ -129,7 +132,9 @@ rPdf.default <- function(Pdf, n, ParamSet, ...) {
   do.call( FName, append(list(n = n), Param, ...) )
 }
 
-
+PdfMoments <- function(Pdf) {
+  UseMethod("PdfMoments")
+}
 
 #' GetLaunchSpace
 #'
@@ -304,13 +309,16 @@ EvaluatePdf <- function( Pdf, ... ) {
 #' EvaluatePdf.default
 #' @describeIn EvaluatePdf
 EvaluatePdf.default <- function( Pdf, Preserve = c("all", "unique", "best") ) {
-  Solutions <- unique(Pdf$ParamSolved, MARGIN = 1) 
-  
+  #-Solutions <- unique(Pdf$ParamSolved) 
+  Solutions <- lapply(Pdf$ParamSolved, `[[`, 2)
+
   #TODO: Compute the distances for all available solutions
-  for(r in nrow(Solutions)) {
+  for(s in Solutions) {
     
   }
   #TODO: store information
+  # Get indices for these solutions
+  #TODO
 }
 
 
