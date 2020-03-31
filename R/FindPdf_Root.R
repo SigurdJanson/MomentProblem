@@ -1,5 +1,5 @@
-source("../R/HarmonicScatter.R")
-source("../R/CubicScatter.R")
+source("./R/HarmonicScatter.R")
+source("./R/CubicScatter.R")
 
 #' Data structure contaning the information required to approximate
 #' a PDF given specific moments.
@@ -9,16 +9,16 @@ source("../R/CubicScatter.R")
 #' @format List with classes "ByMomentPdf" and a second class to indicate
 #' the generative function.
 #' \describe{
-#'   \item{Function}{PDF}
+#'   \item{Function}{PDF} #TODO: Collection containing PDF, CDF & RNG functions
 #'   \item{Moments}{Observed moments (numeric vector).}
 #'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
-#'   because unknown.}
+#'   because unknown. List with the format `list(Function, List-of-Args)`.}
 #'   \item{TarMo}{The desired moments to be approximated 
 #'   (numeric vector).}
-#'   \item{DistaFu}{Distance measure between approximated function and 
-#'   target function.}
-#'   \item{DistaMo}{Distance measure between approximated moments and 
-#'   target function.}
+#'   \item{DistaFu}{Distance measure between approximated solution 
+#'   function and target function.}
+#'   \item{DistaMo}{Distance measure between approximated solution 
+#'   moments and target function.}
 #'   \item{ParamSpace}{Range of definition that is allowed for 
 #'   parameters of the PDF. Numeric matrix with two coordinate 
 #'   vectors in the rows 'from' and 'to'. The number of columns 
@@ -29,6 +29,8 @@ source("../R/CubicScatter.R")
 #'   rows as there are starting points. The number of columns 
 #'   equals the number of parameters, i.e. the dimensions of the 
 #'   paramter space.}
+#'   \item{Tolerance}{Desired precision for converging algorithms.
+#'   Default: `sqrt(.Machine$double.eps)`.}
 #' }
 #' @author Jan Seifert 
 #' @references 
@@ -56,7 +58,8 @@ New_ByMomentPdf.default <- function( TarMo ) {
     ParamSpace = matrix(data = c(-Inf, Inf), nrow = 2,
                         dimnames = list(c("from", "to"), NULL)),
     # Starting points for approximation algorithms
-    LaunchSpace = matrix(numeric(0)) # Matrix of coordinate vectors
+    LaunchSpace = matrix(numeric(0)), # Matrix of coordinate vectors
+    Tolerance = sqrt(.Machine$double.eps)
   ) 
   
   class(this) <- append(class(this), "ByMomentPdf")
@@ -64,10 +67,10 @@ New_ByMomentPdf.default <- function( TarMo ) {
 }
 
 
+
 GetLaunchSpace <- function( Pdf, ... ) {
   UseMethod( "GetLaunchSpace" )
 }
-
 
 
 GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
@@ -128,8 +131,58 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 }
 
 
+AddSolution <- function( Pdf, SoluParam, Append = FALSE ) {
+  # RESULT
+  UseMethod("AddSolution")
+}
+
+
+AddSolution.default <-  function( Pdf, LaunchPoint, 
+                                  SoluParam, Append = FALSE ) {
+  # RESULT
+  if (isTRUE(Append)) {
+    
+  } else {
+    
+  }
+}
+
+
+#' FindPdf
+#' Generic function for all sub-classes of `ByMomentPdf`.
+#' @param Pdf An object of class `ByMomentPdf` or a sub-class.
+#' @param LaunchPoint Index of the launch point is a reference to
+#' the row of `Pdf$SpaceLaunch`.
+#' @param ... Additional arguments to be passed to or from methods.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
+  # PRECONDITIONS
+  if(LaunchPoint < 1) stop("Invalid launch point (must be > 0).")
+  if(LaunchPoint > nrow(Pdf$SpaceLaunch))
+    stop("Index of launch point out of range.")
+  
+  # RESULT
+  UseMethod("FindPdf")
+}
+
+
+
+
 ### TESTING #####
 x <- New_ByMomentPdf.default(c(0, 1))
 x$ParamSpace <- matrix( c(-5, -5, -5, 5, 5, 5), ncol = 3, byrow = TRUE,
                             dimnames = list(c("from", "to"), NULL) )
 x <- GetLaunchSpace( x, Count = 2L, "Random")
+
+
+#' @param TarMo Target moments as vector. See details.
+#' @param mMethod Function generating algorithm. Available are the 
+#' generalised lambda distribution (`gld`), the Pearson distribution
+#' (`pearson`) or a polynomial solution (`poly`).
+#' @param Launch
+#' @details `TarMo` expects the moments from 1 to m, zero-order moment
+#' not included.

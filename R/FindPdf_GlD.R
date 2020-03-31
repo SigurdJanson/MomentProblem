@@ -216,7 +216,7 @@ source("../R/FindPdf_Root.R")
 
 
 
-#' FindPDF_GLD
+#' FindPDF_GLD_A3A4
 #'
 #' @param Moments Vector holding the first four moments.
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
@@ -300,7 +300,8 @@ FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
   # Genetic algorithm first: locate the general vicinity of the minimum
   GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
            A = TarMo, MinMax = 1, 
-           lower = rep(-0.25, length(InitLambda)), upper = rep(25, length(InitLambda)),
+           lower = rep(-0.25, length(InitLambda)), 
+           upper = rep(+25.0, length(InitLambda)),
            popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15)
   #print(summary(GA))
   #plot(GA)
@@ -325,25 +326,45 @@ FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
 
 
 
+FindPdf.gld( Pdf, LaunchPoint, Append = FALSE ) {
+  # Get a resulting PDF
+  Lambda <- FindPDF_GLD( Pdf$TarMo, Pdf$Tolerance )
+  
+  # Determine distance to desired solution
+  AddSolution( Pdf, LaunchPoint, 
+               SoluParam = Lambda, Append = Append )
+}
 
 
+EvaluatePdf.dlg <- function( Pdf ) {
+  #TODO: compute the distances for all available solutions
+}
 
 
+#' New_ByMomentPdf.gld
+#' Constructor of class `gld`.
+#' @param TarMo Target moments, vector with the first four moments.
+#'
+#' @return
+#' @export
+#'
+#' @examples
 New_ByMomentPdf.gld <- function( TarMo ) {
   this <- New_ByMomentPdf.default( TarMo )
+  #TODO: Handle more than 4 moments
   
   NDim <- ifelse(TarMo[3] == 0, 3, 4) # symmetrical distribution
   
-  this$Function   <- list(pdf = dgl, args = NULL) 
+  this$Function   <- list(pdf = dgl, args = NULL)
   # Dimensions of the parameter space of the PDF
   # * -0.25 is the fixed lower limit of the range of def.
   # * +25 is arbitrary
-  this$ParamSpace <- matrix(data = rep(c(-0.25, 25), NDim), 
+  this$ParamSpace <- matrix(data = rep(c(-0.25, 25), NDim),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
     
   # Starting points for approximation algorithms
-  this$LaunchSpace  <- NULL #rep(list(c(NULL)), NDim)
+  this$LaunchSpace  <- NULL
   
   class(this) <- append(class(this), "gld")
   return(this)
