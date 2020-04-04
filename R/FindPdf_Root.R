@@ -6,7 +6,7 @@ source("./R/CubicScatter.R")
 #'
 #' @name ByMomentPdf
 #' @docType data
-#' @format List with classes "ByMomentPdf" and a second class to indicate
+#' @format List with classes `ByMomentPdf` and a second class to indicate
 #' the generative function.
 #' \describe{
 #'   \item{Function}{String holding the base name of generating 
@@ -21,7 +21,9 @@ source("./R/CubicScatter.R")
 #'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
 #'   because unknown. List with the format `list(Function, List-of-Args)`.}
 #'   \item{TarMo}{The desired moments to be approximated 
-#'   (numeric vector).}
+#'   (numeric vector). Accordingly, `Pdf$TarMo[1]` is the mean, `Pdf$TarMo[2]`
+#'   the variance, etc. The length (i.e. the highest allowed moment) is
+#'   defined by each implementation of `ByMomentPdf`.}
 #'   \item{DistaFu}{Distance measure between approximated solution 
 #'   function and target function.}
 #'   \item{DistaMo}{Distance measure between approximated solution 
@@ -132,8 +134,8 @@ rPdf.default <- function(Pdf, n, ParamSet, ...) {
   do.call( FName, append(list(n = n), Param, ...) )
 }
 
-PdfMoments <- function(Pdf) {
-  UseMethod("PdfMoments")
+SolutionMoments <- function(Pdf) {
+  UseMethod("SolutionMoments")
 }
 
 #' GetLaunchSpace
@@ -259,6 +261,10 @@ AddSolution.default <-  function( Pdf, LaunchPoint,
                                 after = Pos)
     }
   }
+  #NOTE: At this point this class assumes that there is one distance
+  # for each solution. If not, they cannot be referenced properly.
+  Pdf$DistaFu <- NULL # not valid anymore
+  Pdf$DistaMo <- NULL # not valid anymore
   return(Pdf)
 }
 
@@ -294,11 +300,24 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 #' Assess the quality of solutions stored in `Pdf`. 
 #' Generic function for all sub-classes of `ByMomentPdf`.
 #' @param Pdf An object of class `ByMomentPdf` or a sub-class.
-#' @param Preserve 
+#' @param usePdf If `TRUE` the distance between found and desired solutions
+#' is determined using the Pdf. If `FALSE` only the moment vectors will be 
+#' used. Default is `FALSE`.
 #' @param ... Additional arguments to be passed to or from methods.
-#'
+#' @description By default, the Pdf itself is used to assess the quality
+#' of any solutions. The range of evaluation is ± 5 stddev around the
+#' mean. The distance function is the Jeffrey divergence which can be 
+#' described as symmetric version of the Kullback-Leibler distance. The
+#' `[jeffreys]()` function of the '[philentropy]' package is used to get it.
+#' 
+#' The distance between moment sets is an euclidean distance as given 
+#' by Rs `[dist]()` function.
+#' @note The code is not very efficient and may not be suited for highly 
+#' iterative automated tasks.
 #' @return A class after adding the optimisation solution. 
 #' The classes of `Pdf` are preserved.
+#' @references Deza, E., & Deza, M. M. (2009). Encyclopedia of Distances. 
+#' Springer. https://doi.org/10.1007/978-3-642-00234-2
 #' @export
 #'
 #' @examples
@@ -308,20 +327,57 @@ EvaluatePdf <- function( Pdf, ... ) {
 
 #' EvaluatePdf.default
 #' @describeIn EvaluatePdf
-EvaluatePdf.default <- function( Pdf, Preserve = c("all", "unique", "best") ) {
-  #-Solutions <- unique(Pdf$ParamSolved) 
-  Solutions <- lapply(Pdf$ParamSolved, `[[`, 2)
+EvaluatePdf.default <- function( Pdf, UsePdf = FALSE ) {
+  if(is.null(Pdf$ParamSolved)) 
+    stop("No solutions available in PDF")
+  if(UsePdf && is.null(Pdf$TarFu)) 
+    stop("'UsePdf' demands a target function in 'Pdf'")
 
-  #TODO: Compute the distances for all available solutions
-  for(s in Solutions) {
+  # Compute the distances
+  if (UsePdf) {
+    if(require(philentropy, quietly = TRUE) == FALSE)
+      stop("Package 'philentropy' is not available")
+    # 
+    BaseRange <- c(-5, 5)
+    EvalRange <- Pdf$TarMo[1] + BaseRange * Pdf$TarMo[2]
+    EvalResolution <- diff(BaseRange) * 1E3
+    x <- seq(EvalRange[1], EvalRange[2], length.out = EvalResolution)
+    #
+    Solutions <- lapply(Pdf$ParamSolved, `[`, 2)
+    DResult <- list()
+    #
+    for(s in Solutions) {
+      SoluResult  <- dPdf(x, s) # get PDF(x)
+      TarFuResult <- do.call( Pdf$TarFu[[1]], append(list(x = x), Pdf$TarFu[2]) )
+      D <- jeffreys(TarFuResult, SoluResult, TRUE, "log2")
+      DResult <- append(DResult, list(D))
+    }
+    Pdf$DistaFu <- DResult
+  } else { # Use moments
+    # if moments are not available, generate
+    if(is.null(Pdf$Moments)) {
+      Pdf$Moments <- list()
+      for(i in 1:length(Pdf$ParamSolved)) {
+        Pdf$Moments <- append(Pdf$Moments, list(i, SolutionMoments(Pdf, i)))
+      }
+    }
     
+    Moments <- lapply(Pdf$Moments, `[[`, 2)
+    DResult <- list()
+    Method <- 1 # i.e. "euclidean", see "?dist"
+    Attrs <- list(Size = 2, Labels = "", Diag = FALSE, Upper = FALSE,
+                  method = "euclidean", call = match.call(), class = "dist")
+    for(m in Moments) {
+      X <- rbind(Pdf$TarMo, m)
+      D <- .Call(C_Cdist, X, Method, Attrs)
+      DResult <- append(DResult, list(m[[1]], D))
+    }
+    Pdf$DistaMo <- DResult
   }
-  #TODO: store information
-  # Get indices for these solutions
-  #TODO
 }
 
-
+## TODO ####
+# - Change .default functions to .ByMomentPdf
 
 ### TESTING #####
 x <- New_ByMomentPdf.default(c(0, 1))

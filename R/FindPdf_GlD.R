@@ -357,7 +357,7 @@ New_ByMomentPdf.gld <- function( TarMo ) {
 }
 
 
-PdfMoments.gld <- function(Pdf, Solution = 1) {
+SolutionMoments.gld <- function(Pdf, Solution = 1) {
   if(length(Solution) == 1) {
     LPs <- lapply(x, `[[`, 1) # get existing launch points
     Pos <- which(LPs == LaunchPoint)

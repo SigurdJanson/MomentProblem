@@ -1,22 +1,28 @@
 @startuml
 class ByMomentPdf {
-  +{field} Function : list
-  +{field} Moments  : double(0)/matrix(double)
-  +{field} ParamSolved : double(0)/matrix(double)
-  +{field} TarFu    : list
-  +{field} TarMo    : double(n)
-  +{field} DistaFu  : matrix(double)
-  +{field} DistaMo  : matrix(double)
+  +{field} Function    : string
+  +{field} Moments     : list(Index, double())
+  +{field} ParamSolved : list(Index, double())
+  +{field} TarFu       : list
+  +{field} TarMo       : double()
+  +{field} DistaFu     : matrix(double)
+  +{field} DistaMo     : matrix(double)
   +{field} DistaMethod : char
   +{field} ParamSpace  : matrix(double)
   +{field} LaunchSpace : matrix(double)
-  +{field} Tolerance : double
+  +{field} Tolerance   : double
 
   +ByMomentPdf New_ByMomentPdf( TarMo )
   +ByMomentPdf GetLaunchSpace(Pdf, ...)
   +ByMomentPdf AddSolution(Pdf, ...)
   +ByMomentPdf FindPdf(Pdf, ...)
   +ByMomentPdf EvaluatePdf(Pdf, ...)
+  +numeric()   SolutionMoments(Pdf, ...)
+  .. Access to Pdf ..
+  +dPdf(...)
+  +pPdf(...)
+  +qPdf(...)
+  +rPdf(...)
 }
 
 
