@@ -50,24 +50,28 @@ source("./R/CubicScatter.R")
 #' New_ByMomentPdf
 #' Constructor for parent class `ByMomentPdf`.
 #' @param TarMo Numeric vector of target moments.
+#' @param TarMo Numeric vector of target moments.
 #' @return Class `ByMomentPdf`
 #' @export
 #' @author Jan Seifert 
 #' @examples
-New_ByMomentPdf <- function( TarMo ) {
+New_ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
+  if(is.null(TarMo) && is.null(TarFu)) 
+    stop("At least one of 'TarMo' or 'TarFu' must be given.")
+  
   New_ByMomentPdf.ByMomentPdf( TarMo )
 }
 
 #' New_ByMomentPdf.ByMomentPdf
 #' @describeIn New_ByMomentPdf
-New_ByMomentPdf.ByMomentPdf <- function( TarMo ) {
+New_ByMomentPdf.ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
   this <- list(
     # Pdf
     Function    = NULL,   # PDF: NULL if unknown or a list(Func, Args)
     Moments     = NULL,   # Moments
     ParamSolved = NULL,
     # Target function
-    TarFu       = NULL,   # PDF: NULL if unknown or a list(Func, Args)
+    TarFu       = TarFu,   # PDF: NULL if unknown or a list(Func, Args)
     TarMo       = TarMo,  # Target moments
     # Distance to target
     DistaFu     = NULL,   # Distance between PDFs
@@ -400,7 +404,6 @@ EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
 }
 
 ## TODO ####
-# - documentation of pdf functions
 # 
 # 
 
