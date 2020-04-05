@@ -1,5 +1,5 @@
-source("./R/HarmonicScatter.R")
-source("./R/CubicScatter.R")
+source("./R/HarmonicScatter.R")#, verbose = TRUE)
+source("./R/CubicScatter.R")#, verbose = TRUE)
 
 #' Data structure contaning the information required to approximate
 #' a PDF given specific moments.
@@ -50,21 +50,25 @@ source("./R/CubicScatter.R")
 #' New_ByMomentPdf
 #' Constructor for parent class `ByMomentPdf`.
 #' @param TarMo Numeric vector of target moments.
-#' @param TarMo Numeric vector of target moments.
+#' @param TarFu Name of target function as string.
 #' @return Class `ByMomentPdf`
 #' @export
 #' @author Jan Seifert 
 #' @examples
 New_ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
-  if(is.null(TarMo) && is.null(TarFu)) 
+  if (is.null(TarMo) && is.null(TarFu)) 
     stop("At least one of 'TarMo' or 'TarFu' must be given.")
+  if (length(TarMo) < 2)
+    stop("Mean and variance must be given at least.")
+  if (any(TarMo[c(FALSE, TRUE)] < 0)) # check even positions
+    stop("Moments with even power must be >= 0.")
   
-  New_ByMomentPdf.ByMomentPdf( TarMo )
+  New_ByMomentPdf.default( TarMo )
 }
 
 #' New_ByMomentPdf.ByMomentPdf
 #' @describeIn New_ByMomentPdf
-New_ByMomentPdf.ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
+New_ByMomentPdf.default <- function( TarMo = NULL, TarFu = NULL ) {
   this <- list(
     # Pdf
     Function    = NULL,   # PDF: NULL if unknown or a list(Func, Args)
@@ -159,7 +163,7 @@ rPdf.ByMomentPdf <- function(Pdf, n, ParamSet, ...) {
 
 
 
-SolutionMoments <- function(Pdf) {
+SolutionMoments <- function(Pdf, ...) {
   UseMethod("SolutionMoments")
 }
 
@@ -260,6 +264,11 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 #'
 #' @examples
 AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
+  # PRECONDITIONS
+  if(LaunchPoint < 1L) stop("Invalid launch point (must be > 0).")
+  if(LaunchPoint != 1 && LaunchPoint > nrow(Pdf$LaunchSpace))
+    stop("Index of launch point out of range.")
+  
   # RESULT
   UseMethod("AddSolution")
 }
@@ -271,21 +280,30 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint,
                                       SoluParam, Append = FALSE ) {
   # RESULT
   if (isFALSE(Append) ||
-      is.null(Pdf$ParamSolved) || nrow(Pdf$Pdf$ParamSolved) <= 1) {
-    Pdf$ParamSolved <- list(LaunchPoint, SoluParam)
+      is.null(Pdf$ParamSolved) || 
+      length(Pdf$ParamSolved) < 1) {
+    Pdf$ParamSolved <- list(list(LaunchPoint, SoluParam))
   } else {
-    # Check if already exists
-    LPs <- lapply(x, `[[`, 1) # get existing launch points
+    # Check if solution for this launch point already exists
+    LPs <- unlist( lapply(Pdf$ParamSolved, `[[`, 1) )
     Pos <- which(LPs == LaunchPoint)
+    
     if (length(Pos) != 0) {
       # Replace if it does
       Pdf$ParamSolved[[Pos]] <- list(LaunchPoint, SoluParam)
     } else {
       # Find position and insert it at the right position
-      Pos <- which.max(LaunchPoint < LPs) - 1
-      Pdf$ParamSolved <- append(Pdf$ParamSolved, 
-                                list(LaunchPoint, SoluParam), 
-                                after = Pos)
+      Len <- length(Pdf$ParamSolved)
+      if (LaunchPoint < LPs[1]) {
+        Pdf$ParamSolved <- c(list(list(LaunchPoint, SoluParam)), Pdf$ParamSolved)
+      } else if (LaunchPoint > LPs[Len]) {
+        Pdf$ParamSolved <- c(Pdf$ParamSolved, list(list(LaunchPoint, SoluParam)))
+      } else {
+        Pos <- which.min(LaunchPoint > LPs)
+        Pdf$ParamSolved <- c(Pdf$ParamSolved[1L:(Pos-1L)], 
+                             list(list(LaunchPoint, SoluParam)), 
+                             Pdf$ParamSolved[Pos:Len])
+      }
     }
   }
   #NOTE: At this point this class assumes that there is one distance
@@ -313,8 +331,8 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint,
 #' @examples
 FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
   # PRECONDITIONS
-  if(LaunchPoint < 1) stop("Invalid launch point (must be > 0).")
-  if(LaunchPoint > nrow(Pdf$SpaceLaunch))
+  if(LaunchPoint < 1L) stop("Invalid launch point (must be > 0).")
+  if(LaunchPoint > nrow(Pdf$LaunchSpace))
     stop("Index of launch point out of range.")
   
   # RESULT
@@ -403,21 +421,4 @@ EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
   }
 }
 
-## TODO ####
-# 
-# 
 
-### TESTING #####
-x <- New_ByMomentPdf.ByMomentPdf(c(0, 1))
-x$ParamSpace <- matrix( c(-5, -5, -5, 5, 5, 5), ncol = 3, byrow = TRUE,
-                           dimnames = list(c("from", "to"), NULL) )
-x <- GetLaunchSpace( x, Count = 2L, "Random")
-
-
-#' @param TarMo Target moments as vector. See details.
-#' @param Method Function generating algorithm. Available are the 
-#' generalised lambda distribution (`gld`), the Pearson distribution
-#' (`pearson`) or a polynomial solution (`poly`).
-#' @param Launch
-#' @details `TarMo` expects the moments from 1 to m, zero-order moment
-#' not included.
