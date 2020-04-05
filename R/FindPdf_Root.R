@@ -86,6 +86,19 @@ New_ByMomentPdf.ByMomentPdf <- function( TarMo ) {
 
 
 # Probability distribution functions ----
+#' Underlying probability distribution
+#' Density, distribution function, quantile function and random generation 
+#' function. Calls the according function in `Pdf$Function`.
+#' @param Pdf A `ByMomentPdf` object.
+#' @param x,q Vector of quantiles.
+#' @param p vector of probabilities.
+#' @param n Number of observations. If length(n) > 1, the length is taken to be the number required.
+#' @param ParamSet The arguments passed on to the 
+#' @param ... Further arguments passed on to `Pdf$Function`.
+#' @return Returns the result of the distribution function.
+#' @export
+#'
+#' @examples
 dPdf <- function(Pdf, x, ParamSet, ...) {
   UseMethod("dPdf")
 }
@@ -98,6 +111,8 @@ dPdf.ByMomentPdf <- function(Pdf, x, ParamSet, ...) {
   do.call( FName, append(list(x = x), c(Param, list(...))) )
 }
 
+#' pPdf
+#' @describeIn dPdf Gives the distribution function
 pPdf <- function(Pdf, q, ParamSet, ...) {
   UseMethod("pPdf")
 }
@@ -110,6 +125,8 @@ pPdf.ByMomentPdf <- function(Pdf, q, ParamSet, ...) {
   do.call( FName, append(list(q = q), Param, ...) )
 }
 
+#' qPdf
+#' @describeIn dPdf Gives the quantile function
 qPdf <- function(Pdf, p, ParamSet, ...) {
   UseMethod("qPdf")
 }
@@ -122,6 +139,8 @@ qPdf.ByMomentPdf <- function(Pdf, p, ParamSet, ...) {
   do.call( FName, append(list(p = p), Param, ...) )
 }
 
+#' rPdf
+#' @describeIn dPdf Generates random deviates
 rPdf <- function(Pdf, p, ParamSet, ...) {
   UseMethod("rPdf")
 }
@@ -382,6 +401,7 @@ EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
 
 ## TODO ####
 # - documentation of pdf functions
+# 
 # 
 
 ### TESTING #####
