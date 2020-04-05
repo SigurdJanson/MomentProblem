@@ -245,6 +245,9 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 }
 
 
+SetLaunchSpace <- function( LaunchSpace ) {
+  UseMethod("SetLaunchSpace")
+}
 
 #' AddSolution
 #' Adds a new optimisation result to the solutions. 
