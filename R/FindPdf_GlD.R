@@ -10,9 +10,9 @@ source("./R/FindPdf_Root.R")
 #' @param L3 GLD parameter lambda3
 #' @param L4 GLD parameter lambda4
 .v1f <- function( L3, L4 ) {
-  if(is.numeric(c(L3, L4)))
-    if(L3 == 0 && L4 == 0) 
-      return(0) # TODO: verify this line
+  # if(is.numeric(c(L3, L4)))
+  #   if(L3 == 0 && L4 == 0) 
+  #     return(0) # TODO: verify this line
   s1 <- 1 / L3 / (L3+1)
   s2 <- 1 / L4 / (L4+1)
   return(s1-s2)
@@ -36,7 +36,7 @@ source("./R/FindPdf_Root.R")
 #' @param L3 GLD parameter lambda3
 #' @param L4 GLD parameter lambda4
 .v3f <- function( L3, L4 ) {
-  if(L3 == 0 && L4 == 0) return(0) # TODO: verify this line
+  # if(L3 == 0 && L4 == 0) return(0) # TODO: verify this line
   s1 <- 1 / L3^3 / (3*L3+1)
   s2 <- 1 / L4^3 / (3*L4+1)
   s3 <- 3 / L3^2 / L4 * suppressWarnings(beta(2*L3+1, L4+1))
@@ -82,7 +82,7 @@ source("./R/FindPdf_Root.R")
 .Alpha4 <- function( v ) { 
   
   n <- (v[4] - 4*v[1]*v[3] + 6*v[1]^2*v[2] - 3*v[1]^4)
-  d <- (v[2]-v[1]^2)^4
+  d <- (v[2]-v[1]^2)^2
   alpha4 <- n / d
   
   return(alpha4)
@@ -146,7 +146,7 @@ source("./R/FindPdf_Root.R")
   # based on eqn 27: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
   Alpha2 <- (v2 - v1^2) / lambda2^2
   # based on eqn 28: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
-  Alpha1 <- lambda1 - 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
+  Alpha1 <- lambda1 - 1/lambda2 * ( (1/(lambda3+1)) - (1/(lambda4+1)) )
 
   Delta1 <- abs(A[1] - Alpha1)
   Delta2 <- abs(A[2] - Alpha2)
@@ -335,22 +335,23 @@ source("./R/FindPdf_Root.R")
 #' @export
 #'
 #' @examples
-New_ByMomentPdf.gld <- function( TarMo ) {
-  this <- New_ByMomentPdf.default( TarMo )
-  #TODO: Handle more than 4 moments
+New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
+  if(length(TarMo) > 4) 
+    stop("Generalised lambda approximation can only handle up to 4 moments.")
+  this <- New_ByMomentPdf( TarMo, TarFu )
   
   NDim <- ifelse(TarMo[3] == 0, 3, 4) # symmetrical distribution
   
   this$Function   <- "gl"
   # Dimensions of the parameter space of the PDF
-  # * -0.25 is the fixed lower limit of the range of def.
-  # * +25 is arbitrary
-  this$ParamSpace <- matrix(data = rep(c(-0.25, 25), NDim),
+  Dim12 <- c(-25, 25)   #-+25 is arbitrary
+  Dim34 <- c(-0.25, 25) # -0.25 is the defined limit of the range of def.
+  this$ParamSpace <- matrix(data = c(Dim12, Dim12, Dim34, Dim34),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
   
   # Starting points for approximation algorithms
-  this$LaunchSpace  <- NULL
+  #this$LaunchSpace  <- NULL
   
   class(this) <- append(class(this), "gld")
   return(this)
@@ -359,14 +360,14 @@ New_ByMomentPdf.gld <- function( TarMo ) {
 
 SolutionMoments.gld <- function(Pdf, Solution = 1) {
   if(length(Solution) == 1) {
-    LPs <- lapply(x, `[[`, 1) # get existing launch points
-    Pos <- which(LPs == LaunchPoint)
-    if (length(Pos) != 0) {
-      Solution <- Pdf$ParamSolved[Pos]
+    LPs <- lapply(Pdf$ParamSolved, `[[`, 1) 
+    Pos <- which(unlist(LPs) == Solution)
+    if (length(Pos) == 1) {
+      Solution <- Pdf$ParamSolved[[Pos]][[2]]
     } else {
-      stop(paste("Solution", Solution, "not found"))
+      stop(paste("Solution", Solution, "not found."))
     }
-  }
+  } else stop("Works only for a single solution.")
     
   Alpha <- numeric(4)
   
@@ -379,13 +380,10 @@ SolutionMoments.gld <- function(Pdf, Solution = 1) {
   Alpha[2] <- (v2 - v1^2) / Solution[2]^2
   # based on eqn 28: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
   Alpha[1] <- Solution[1] - 1/Solution[2] * 
-    ( (1/(Solution[3]+1)) + (1/(Solution[4]+1)) )
+    ( (1/(Solution[3]+1)) - (1/(Solution[4]+1)) )
   Alpha[3] <- .Alpha3(c(v1, v2, v3, v4))
-  if(Alpha[3] != 0) 
-    Alpha[4] <- .Alpha4(c(v1, v2, v3, v4))
-  else
-    Alpha[4] <- Alpha[3] # When symmetry: L3 = L4
-  
+  Alpha[4] <- .Alpha4(c(v1, v2, v3, v4))
+
   return(Alpha)
 }
 
