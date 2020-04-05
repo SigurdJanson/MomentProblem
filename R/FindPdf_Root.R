@@ -55,12 +55,12 @@ source("./R/CubicScatter.R")
 #' @author Jan Seifert 
 #' @examples
 New_ByMomentPdf <- function( TarMo ) {
-  New_ByMomentPdf.default( TarMo )
+  New_ByMomentPdf.ByMomentPdf( TarMo )
 }
 
-#' New_ByMomentPdf.default
+#' New_ByMomentPdf.ByMomentPdf
 #' @describeIn New_ByMomentPdf
-New_ByMomentPdf.default <- function( TarMo ) {
+New_ByMomentPdf.ByMomentPdf <- function( TarMo ) {
   this <- list(
     # Pdf
     Function    = NULL,   # PDF: NULL if unknown or a list(Func, Args)
@@ -90,7 +90,7 @@ dPdf <- function(Pdf, x, ParamSet, ...) {
   UseMethod("dPdf")
 }
 
-dPdf.default <- function(Pdf, x, ParamSet, ...) {
+dPdf.ByMomentPdf <- function(Pdf, x, ParamSet, ...) {
   FName <- paste0("d", Pdf$Function)
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
@@ -102,7 +102,7 @@ pPdf <- function(Pdf, q, ParamSet, ...) {
   UseMethod("pPdf")
 }
 
-pPdf.default <- function(Pdf, q, ParamSet, ...) {
+pPdf.ByMomentPdf <- function(Pdf, q, ParamSet, ...) {
   FName <- paste0("p", Pdf$Function)
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
@@ -114,7 +114,7 @@ qPdf <- function(Pdf, p, ParamSet, ...) {
   UseMethod("qPdf")
 }
 
-qPdf.default <- function(Pdf, p, ParamSet, ...) {
+qPdf.ByMomentPdf <- function(Pdf, p, ParamSet, ...) {
   FName <- paste0("q", Pdf$Function)
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
@@ -126,7 +126,7 @@ rPdf <- function(Pdf, p, ParamSet, ...) {
   UseMethod("rPdf")
 }
 
-rPdf.default <- function(Pdf, n, ParamSet, ...) {
+rPdf.ByMomentPdf <- function(Pdf, n, ParamSet, ...) {
   FName <- paste0("r", Pdf$Function)
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
@@ -134,9 +134,13 @@ rPdf.default <- function(Pdf, n, ParamSet, ...) {
   do.call( FName, append(list(n = n), Param, ...) )
 }
 
+
+
 SolutionMoments <- function(Pdf) {
   UseMethod("SolutionMoments")
 }
+
+
 
 #' GetLaunchSpace
 #'
@@ -238,10 +242,10 @@ AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
 }
 
 
-#' AddSolution.default
+#' AddSolution.ByMomentPdf
 #' @describeIn AddSolution
-AddSolution.default <-  function( Pdf, LaunchPoint, 
-                                  SoluParam, Append = FALSE ) {
+AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, 
+                                      SoluParam, Append = FALSE ) {
   # RESULT
   if (isFALSE(Append) ||
       is.null(Pdf$ParamSolved) || nrow(Pdf$Pdf$ParamSolved) <= 1) {
@@ -325,9 +329,9 @@ EvaluatePdf <- function( Pdf, ... ) {
   UseMethod("EvaluatePdf")
 }
 
-#' EvaluatePdf.default
+#' EvaluatePdf.ByMomentPdf
 #' @describeIn EvaluatePdf
-EvaluatePdf.default <- function( Pdf, UsePdf = FALSE ) {
+EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
   if(is.null(Pdf$ParamSolved)) 
     stop("No solutions available in PDF")
   if(UsePdf && is.null(Pdf$TarFu)) 
@@ -377,10 +381,11 @@ EvaluatePdf.default <- function( Pdf, UsePdf = FALSE ) {
 }
 
 ## TODO ####
-# - Change .default functions to .ByMomentPdf
+# - documentation of pdf functions
+# 
 
 ### TESTING #####
-x <- New_ByMomentPdf.default(c(0, 1))
+x <- New_ByMomentPdf.ByMomentPdf(c(0, 1))
 x$ParamSpace <- matrix( c(-5, -5, -5, 5, 5, 5), ncol = 3, byrow = TRUE,
                            dimnames = list(c("from", "to"), NULL) )
 x <- GetLaunchSpace( x, Count = 2L, "Random")
