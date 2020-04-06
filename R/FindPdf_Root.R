@@ -18,7 +18,7 @@ source("./R/CubicScatter.R")
 #'   second holds a vectors of moments.}}
 #'   \item{ParamSolved}{A list of parameters for each solution. 
 #'   The first list element contains a reference to the solution. The
-#'   second holds a vectors of parameters.}
+#'   second holds a vector of parameters.}
 #'   \item{TarFu}{A function the new PDF shall mimic. Usually `NULL` 
 #'   because unknown. List with the format `list(Function, List-of-Args)`.}
 #'   \item{TarMo}{The desired moments to be approximated 
@@ -64,7 +64,7 @@ New_ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
   if (any(TarMo[c(FALSE, TRUE)] < 0)) # check even positions
     stop("Moments with even power must be >= 0.")
   
-  New_ByMomentPdf.default( TarMo )
+  New_ByMomentPdf.default( TarMo, TarFu )
 }
 
 #' New_ByMomentPdf.ByMomentPdf
@@ -72,12 +72,12 @@ New_ByMomentPdf <- function( TarMo = NULL, TarFu = NULL ) {
 New_ByMomentPdf.default <- function( TarMo = NULL, TarFu = NULL ) {
   this <- list(
     # Pdf
-    Function    = NULL,   # PDF: NULL if unknown or a list(Func, Args)
+    Function    = NULL,   # NULL if unknown or a list(Func, Args)
     Moments     = NULL,   # Moments
     ParamSolved = NULL,
-    # Target function
-    TarFu       = TarFu,   # PDF: NULL if unknown or a list(Func, Args)
-    TarMo       = TarMo,  # Target moments
+    # Target FUnction and MOments
+    TarFu       = TarFu,  # NULL if unknown or a list(Func, Args)
+    TarMo       = TarMo,  # NULL if unknown or a numeric vector
     # Distance to target
     DistaFu     = NULL,   # Distance between PDFs
     DistaMo     = NULL,   # Distance between moments
@@ -343,9 +343,11 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 
 
 #' EvaluatePdf
-#' Assess the quality of solutions stored in `Pdf`. 
-#' Generic function for all sub-classes of `ByMomentPdf`.
-#' @param Pdf An object of class `ByMomentPdf` or a sub-class.
+#' Assess the quality of solutions stored in `Pdf` by assessing 
+#' the distance to the target.
+#' 
+#' Generic function for all sub-classes of `[ByMomentPdf]`.
+#' @param Pdf An object of class `[ByMomentPdf]` or a sub-class.
 #' @param usePdf If `TRUE` the distance between found and desired solutions
 #' is determined using the Pdf. If `FALSE` only the moment vectors will be 
 #' used. Default is `FALSE`.
@@ -360,20 +362,21 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 #' by Rs `[dist]()` function.
 #' @note The code is not very efficient and may not be suited for highly 
 #' iterative automated tasks.
-#' @return A class after adding the optimisation solution. 
+#' @return A class after adding the optimisation solution as element
+#' `DistaMo` or `DistaFu`.
 #' The classes of `Pdf` are preserved.
 #' @references Deza, E., & Deza, M. M. (2009). Encyclopedia of Distances. 
 #' Springer. https://doi.org/10.1007/978-3-642-00234-2
 #' @export
 #'
 #' @examples
-EvaluatePdf <- function( Pdf, ... ) {
+EvaluatePdf <- function(Pdf, ...) {
   UseMethod("EvaluatePdf")
 }
 
 #' EvaluatePdf.ByMomentPdf
 #' @describeIn EvaluatePdf
-EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
+EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   if(is.null(Pdf$ParamSolved)) 
     stop("No solutions available in PDF")
   if(UsePdf && is.null(Pdf$TarFu)) 
@@ -396,7 +399,7 @@ EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
       SoluResult  <- dPdf(x, s) # get PDF(x)
       TarFuResult <- do.call( Pdf$TarFu[[1]], append(list(x = x), Pdf$TarFu[2]) )
       D <- jeffreys(TarFuResult, SoluResult, TRUE, "log2")
-      DResult <- append(DResult, list(D))
+      DResult <- append(DResult, list(ID = s[[1]], Delta = D))
     }
     Pdf$DistaFu <- DResult
   } else { # Use moments
@@ -416,10 +419,41 @@ EvaluatePdf.ByMomentPdf <- function( Pdf, UsePdf = FALSE ) {
     for(m in Moments) {
       X <- rbind(Pdf$TarMo, m)
       D <- .Call(C_Cdist, X, Method, Attrs)
-      DResult <- append(DResult, list(m[[1]], D))
+      DResult <- append(DResult, list(ID = m[[1]], Delta = D))
     }
     Pdf$DistaMo <- DResult
   }
+  return(Pdf)
 }
 
 
+
+
+BestSolution <- function(Pdf, UsePdf = FALSE) {
+  UseMethod("BestSolution")
+}
+
+BestSolution.ByMomentpdf <- function(Pdf, UsePdf = FALSE) {
+  if(UsePdf) {
+    if(!is.null(Pdf$DistaFu)) Pdf <- EvaluatePdf(Pdf, UsePdf)
+    DistaXx <- Pdf$DistaFu
+  } else {
+    if(!is.null(Pdf$DistaMo)) Pdf <- EvaluatePdf(Pdf, UsePdf)
+    DistaXx <- Pdf$DistaMo
+  }
+  
+  # Get the index of the solutions with best results
+  Distances <- unlist(lapply(DistaXx, `[[`, 2))
+  Best <- which(Distances == min(Distances))
+  
+  # Get all the parameter sets yielding best results
+  BestParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
+  BestParamSets <- BestParamSets[Best]
+  UniBestParamSets <- unique(BestParamSets)
+  NBest <- length(UniBestParamSets)
+
+  UniBestParamSets <- matrix(unlist(UniBestParamSets), 
+                             nrow = NBest, byrow = TRUE)
+  
+  return(UniBestParamSets)
+}
