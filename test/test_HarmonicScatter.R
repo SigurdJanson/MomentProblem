@@ -1,5 +1,6 @@
-library(testthat)
-source("../R/HarmonicScatter.R")
+setwd("..")
+source("./R/HarmonicScatter.R")
+setwd("./test")
 
 
 test_that("Harmony: Compare Linear and Recursive Function", {

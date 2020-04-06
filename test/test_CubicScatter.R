@@ -1,5 +1,6 @@
-library(testthat)
-source("../R/CubicScatter.R")
+setwd("..")
+source("./R/CubicScatter.R")
+setwd("./test")
 
 test_that("GetCubicPoints: Preconditions", {
   expect_error(GetCubicPoints(0L, 2), 
