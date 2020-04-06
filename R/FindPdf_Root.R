@@ -1,5 +1,6 @@
-source("./R/HarmonicScatter.R")#, verbose = TRUE)
-source("./R/CubicScatter.R")#, verbose = TRUE)
+source("./R/HarmonicScatter.R")
+source("./R/RandomScatter.R")
+source("./R/CubicScatter.R")
 
 #' Data structure contaning the information required to approximate
 #' a PDF given specific moments.
@@ -201,14 +202,11 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
   # RUN
   # Random: 1 to n randomly set points
   if (Method == "Random") {
-    LaunchPad <- numeric(0)
-    for(c in 1:Count) { 
-      Point <- runif(NDim, 
-                     min = Pdf$ParamSpace["from", ],
-                     max = Pdf$ParamSpace["to", ])
-      LaunchPad <- rbind(LaunchPad, Point)
-    }
-    dimnames(LaunchPad) <- NULL
+    LaunchPad <- GetRandomPoints(NDim, Count)
+    # Scale points to 'ParamSpace'
+    Range <- Pdf$ParamSpace["to", ] - Pdf$ParamSpace["from", ]
+    LaunchPad <- LaunchPad * Range
+    LaunchPad <- LaunchPad + Pdf$ParamSpace["from", ]
     Pdf$LaunchSpace <- LaunchPad
   }
   
