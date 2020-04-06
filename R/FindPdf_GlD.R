@@ -270,7 +270,7 @@ source("./R/FindPdf_Root.R")
   # eqn 28
   Lambda[1] <- Moments[1] + 1/Lambda[2] * ( (1/(Lambda[3]+1)) + (1/(Lambda[4]+1)) )
   
-  print(Lambda)
+  #print(Lambda)
   return(Lambda)
 }
 
@@ -310,7 +310,7 @@ source("./R/FindPdf_Root.R")
   #print(summary(GA))
   #plot(GA)
   #GA@solution[1,] - c(-0.15, -0.15)
-  print(GA@solution[1,])
+  #print(GA@solution[1,])
   r <- optimx(GA@solution[1,], method = c("Nelder-Mead"), 
               fn = .DeltaAllGLD, A = TarMo, 
               control = list(reltol = Tolerance, maxit = 50000) )

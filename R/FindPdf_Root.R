@@ -410,8 +410,8 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     DResult <- list()
     #
     for(s in Solutions) {
-      SoluResult  <- dPdf(x, s) # get PDF(x)
-      TarFuResult <- do.call( Pdf$TarFu[[1]], append(list(x = x), Pdf$TarFu[2]) )
+      SoluResult  <- dPdf(Pdf, x, s) # get PDF(x)
+      TarFuResult <- do.call( Pdf$TarFu[[1]], c(list(x = x), Pdf$TarFu[[2]]) )
       D <- jeffreys(TarFuResult, SoluResult, TRUE, "log2")
       DResult <- append(DResult, list(ID = s[[1]], Delta = D))
     }
@@ -456,7 +456,7 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
 #' @export
 #' @author Jan Seifert
 #' @examples
-BestSolution <- function(Pdf, UsePdf = FALSE) {
+BestSolution <- function(Pdf, ...) {
   UseMethod("BestSolution")
 }
 
