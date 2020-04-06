@@ -107,6 +107,7 @@ New_ByMomentPdf.default <- function( TarMo = NULL, TarFu = NULL ) {
 #' @return Returns the result of the distribution function.
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 dPdf <- function(Pdf, x, ParamSet, ...) {
   UseMethod("dPdf")
@@ -171,7 +172,8 @@ SolutionMoments <- function(Pdf, ...) {
 
 
 #' GetLaunchSpace
-#'
+#' Generate a list of launch coordinates as starting points in the
+#' search for solutions.
 #' @param Pdf An object of class `ByMomentPdf`.
 #' @param Count Number of desired launch points.
 #' @param Method A method to generate launch points.
@@ -180,6 +182,7 @@ SolutionMoments <- function(Pdf, ...) {
 #' The classes of `Pdf` are preserved.
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 GetLaunchSpace <- function( Pdf, ... ) {
   UseMethod( "GetLaunchSpace" )
@@ -243,6 +246,14 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 }
 
 
+#' SetLaunchSpace
+#' Set a launch space instead of asking the object to generate
+#' its own.
+#' @param LaunchSpace A list of launch coordinates to set.
+#' @return `ByMomentPdf`-object
+#' @export
+#' @author Jan Seifert
+#' @examples
 SetLaunchSpace <- function( LaunchSpace ) {
   UseMethod("SetLaunchSpace")
 }
@@ -263,6 +274,7 @@ SetLaunchSpace <- function( LaunchSpace ) {
 #' The classes of `Pdf` are preserved.
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
   # PRECONDITIONS
@@ -329,6 +341,7 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint,
 #' The classes of `Pdf` are preserved.
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
   # PRECONDITIONS
@@ -348,7 +361,7 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 #' 
 #' Generic function for all sub-classes of `[ByMomentPdf]`.
 #' @param Pdf An object of class `[ByMomentPdf]` or a sub-class.
-#' @param usePdf If `TRUE` the distance between found and desired solutions
+#' @param UsePdf If `TRUE` the distance between found and desired solutions
 #' is determined using the Pdf. If `FALSE` only the moment vectors will be 
 #' used. Default is `FALSE`.
 #' @param ... Additional arguments to be passed to or from methods.
@@ -369,6 +382,7 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 #' Springer. https://doi.org/10.1007/978-3-642-00234-2
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 EvaluatePdf <- function(Pdf, ...) {
   UseMethod("EvaluatePdf")
@@ -429,10 +443,25 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
 
 
 
+#' BestSolution
+#' Determines which solution stored in a `ByMomentPdf`-object is
+#' closest to the target solution.
+#' @param Pdf A `ByMomentPdf`-object
+#' @param UsePdf If `TRUE` the distance between found and desired solutions
+#' is determined using the Pdf. If `FALSE` only the moment vectors will be 
+#' used. Default is `FALSE`.
+#'
+#' @return A single vector of solution parameters or a matrix 
+#' if more than solution reaches the same optimal result.
+#' @export
+#' @author Jan Seifert
+#' @examples
 BestSolution <- function(Pdf, UsePdf = FALSE) {
   UseMethod("BestSolution")
 }
 
+#' BestSolution.ByMomentpdf
+#' @describeIn BestSolution
 BestSolution.ByMomentpdf <- function(Pdf, UsePdf = FALSE) {
   if(UsePdf) {
     if(!is.null(Pdf$DistaFu)) Pdf <- EvaluatePdf(Pdf, UsePdf)

@@ -14,10 +14,12 @@ class ByMomentPdf {
 
   +ByMomentPdf New_ByMomentPdf( TarMo )
   +ByMomentPdf GetLaunchSpace(Pdf, ...)
+  +ByMomentPdf SetLaunchSpace(Pdf, ...)
   +ByMomentPdf AddSolution(Pdf, ...)
   +ByMomentPdf FindPdf(Pdf, ...)
   +ByMomentPdf EvaluatePdf(Pdf, ...)
   +numeric()   SolutionMoments(Pdf, ...)
+  +numeric()   BestSolution(Pdf, ...)
   .. Access to Pdf ..
   +dPdf(...)
   +pPdf(...)
@@ -29,6 +31,7 @@ class ByMomentPdf {
 class gld {
   +ByMomentPdf New_ByMomentPdf( TarMo )
   +ByMomentPdf FindPdf(Pdf, ...)
+  +numeric()   SolutionMoments(Pdf, ...)
   .. hidden ..
   #.FindPDF_GLD(...)
   #.FindPDF_GLD_A3A4(...)
@@ -46,6 +49,12 @@ class gld {
 class poly {
   +ByMomentPdf New_ByMomentPdf( TarMo )
   +ByMomentPdf FindPdf(Pdf, ...)
+  +ByMomentPdf SetLaunchSpace(Pdf, ...)
+  .. Access to Pdf ..
+  +dPdf(...)
+  +qPdf(...)
+  +qPdf(...)
+  +rPdf(...)
 }
 
 class pearson {

@@ -14,6 +14,7 @@ source("./R/FindPdf_Poly.R")
 #' @return A converged Pdf object of class `ByMomentPdf`.
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"), 
                     Plot = FALSE ) {

@@ -287,6 +287,7 @@ source("./R/FindPdf_Root.R")
 #' @return
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 .FindPDF_GLD <- function( TarMo, InitLambda, Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
@@ -335,6 +336,7 @@ source("./R/FindPdf_Root.R")
 #' @return
 #' @export
 #'
+#' @author Jan Seifert
 #' @examples
 New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
   if(length(TarMo) > 4) 
