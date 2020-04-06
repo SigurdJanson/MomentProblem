@@ -90,14 +90,15 @@ source("./R/FindPdf_Root.R")
 
 
 #' .Delta_GLD
-#' Helper function to compute the distance from the expected values of the 
-#' third and fourth moment.
+#' Helper function to compute the distance from the expected values
+#' of the third and fourth moment.
+#' 
 #' The output of this function must be optimised.
 #' @param L Vector containing lambda3 and 4
 #' @param A3,A4 Desired third and fourth moment
-#' @param MinMax 0 Indicates that the function shall minimise the result to
-#' support classic optimisation algorithms; 1 indicates maximising for the 
-#' use of genetic algorithms
+#' @param MinMax 0 Indicates that the function shall minimise the 
+#' result to support classic optimisation algorithms; 1 indicates 
+#' maximising for the use of genetic algorithms.
 .DeltaA3A4GLD <- function(L, A3, A4, MinMax = 0) {
   #if(min(L) < -0.25) return(Inf) # Required: min(lambda3,lambda4) > -1/4 
   if(length(L) == 1) L <- c(L, L)
@@ -287,23 +288,24 @@ source("./R/FindPdf_Root.R")
 #' @export
 #'
 #' @examples
-.FindPDF_GLD <- function( TarMo, Tolerance = sqrt(.Machine$double.eps) ) {
+.FindPDF_GLD <- function( TarMo, InitLambda, Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
   names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
   
   # In case of symmetry: lambda3 = lambda4
   # i.e. only 4 parameter to estimate
-  if(TarMo[3] == 0) 
-    InitLambda <- runif(3, -0.25, 5)
-  else
-    InitLambda <- runif(4, -0.25, 5) # initial values to start optimisation
+  # if(TarMo[3] == 0) 
+  #   InitLambda <- runif(3, -0.25, 5)
+  # else
+  #   InitLambda <- runif(4, -0.25, 5) # initial values to start optimisation
   
   # Genetic algorithm first: locate the general vicinity of the minimum
   GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
            A = TarMo, MinMax = 1, 
            lower = rep(-0.25, length(InitLambda)), 
            upper = rep(+25.0, length(InitLambda)),
-           popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15)
+           popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
+           monitor = FALSE)
   #print(summary(GA))
   #plot(GA)
   #GA@solution[1,] - c(-0.15, -0.15)
@@ -320,8 +322,7 @@ source("./R/FindPdf_Root.R")
   else
     Lambda[4] <- r$x4
   
-
-  print(Lambda)
+  #print(Lambda)
   return(Lambda)
 }
 
@@ -360,7 +361,7 @@ New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
 
 SolutionMoments.gld <- function(Pdf, Solution = 1) {
   if(length(Solution) == 1) {
-    LPs <- lapply(Pdf$ParamSolved, `[[`, 1) 
+    LPs <- lapply(Pdf$ParamSolved, `[[`, 1)
     Pos <- which(unlist(LPs) == Solution)
     if (length(Pos) == 1) {
       Solution <- Pdf$ParamSolved[[Pos]][[2]]
@@ -390,12 +391,17 @@ SolutionMoments.gld <- function(Pdf, Solution = 1) {
 
 
 FindPdf.gld <- function( Pdf, LaunchPoint, Append = FALSE ) {
+  # PRECONDITIONS get tested by generic method 'FindPdf'
+  # RESULTS
+  LP <- Pdf$LaunchSpace[LaunchPoint, ]
+
   # Get a resulting PDF
-  Lambda <- .FindPDF_GLD( Pdf$TarMo, Pdf$Tolerance )
+  Lambda <- .FindPDF_GLD( Pdf$TarMo, LP, Pdf$Tolerance )
   
   # Determine distance to desired solution
-  AddSolution( Pdf, LaunchPoint, 
-               SoluParam = Lambda, Append = Append )
+  Pdf <- AddSolution( Pdf, LaunchPoint, 
+                      SoluParam = Lambda, Append = Append )
+  return(Pdf)
 }
 
 
