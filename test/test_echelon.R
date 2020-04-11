@@ -2,6 +2,19 @@ setwd("..")
 source("./R/echelon.R")
 setwd("./test")
 
+test_that("Echelon Preconditions", {
+  expect_error(Echelon("Hello"), 
+               "Input must be a numeric matrix.")
+  expect_error(Echelon(array(1:12, dim = c(3,2,2))), 
+               "Matrix must be 2-dimensional")
+  expect_error(Echelon(1:12), "Matrix must be 2-dimensional")
+  
+  expect_error(Echelon(matrix(1:12, nrow = 12)), 
+               "Matrix needs more rows and cols than 1")
+  expect_error(Echelon(matrix(1:12, ncol = 12)), 
+               "Matrix needs more rows and cols than 1")
+})
+
 
 test_that("Echelon (not reduced)", {
   # Echelon_Row_Reduction_in_R.pdf - self-computed solution
@@ -168,6 +181,26 @@ test_that("Echelon - Comparison with pracma::rref", {
     expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
   }
   
+  # matrices with ncol > nrow
+  for(Size in c(5, 10, 11, 20, 50, 100)) {
+    M <- matrix(
+      sample.int(Size * (Size %/% 2), replace = TRUE),
+      ncol = Size)
+    Tolerance <- .Machine$double.eps * Size * max(abs(M))
+    expect_silent(Echelon(M, Reduced = TRUE, tolerance = Tolerance))
+    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+  }
+  
+  # matrices with ncol < nrow
+  for(Size in c(5, 10, 11, 20, 50, 100)) {
+    M <- matrix(
+      sample.int(Size * (Size %/% 2), replace = TRUE),
+      nrow = Size)
+    Tolerance <- .Machine$double.eps * Size * max(abs(M))
+    expect_silent(Echelon(M, Reduced = TRUE, tolerance = Tolerance))
+    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+  }
+  
 })
 
 
@@ -211,7 +244,14 @@ test_that("Echelon - Comparison with rref by Fox", {
     else round(A, round(abs(log(tol,10))))
   }
   
-  succeed()
+  # Squared matrices
+  for(Size in c(2, 5, 10, 11, 20, 50, 100)) {
+    M <- matrix(
+      sample.int(Size * Size, replace = TRUE),
+      ncol = Size)
+    Tolerance <- .Machine$double.eps * Size * max(abs(M))
+    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+  }
 })
 
 test_that("Echelon - test basic criteria", {
@@ -221,5 +261,10 @@ test_that("Echelon - test basic criteria", {
 # 3. The leading entry in any nonzero row is 1.
 # 4. All entries in the column above and below a leading 1 are zero.
 # Another common definition of echelon form only requires zeros below the leading ones, while the above definition also requires them above the leading ones.
+#
+# A matrix is in reduced row echelon form (rref) when it satisfies the following conditions.
+# 1. The matrix is in row echelon form (i.e., it satisfies the three conditions listed above).
+# 2. The leading entry in each row is the only non-zero entry in its column.
+  
   succeed()
 })

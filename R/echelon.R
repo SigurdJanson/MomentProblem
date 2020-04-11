@@ -1,23 +1,42 @@
 
+#' Echelon
+#' Compute the echelon form of a matrix.
+#' @param M A numeric matrix with at least two rows and columns
+#' @param Reduced If `TRUE` the function will return the echelon in its 
+#' reduced form.
+#' @param Tolerance The smallest value that is considered different from
+#' zero.
+#' @return A numeric matrix in the requested form.
+#' @author Jan Seifert
+#' @export
+#' @examples
+#' M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6))
+#' Echelon(M)
+#' # Result: matrix(c(1,2,3,2, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+#' M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6), nrow = 3, byrow = TRUE)
+#' Echelon(M, Reduced = TRUE)
+#' # Result: matrix(c(1,0,5,0, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
 Echelon <- function(M, Reduced = FALSE, 
-                    tolerance = sqrt(.Machine$double.eps) ) {
+                    Tolerance = sqrt(.Machine$double.eps) ) {
   # PRECONDITIONS
   if (!is.numeric(M) && !is.matrix(M))
     stop("Input must be a numeric matrix.")
+  if (length(dim(M)) != 2) stop("Matrix must be 2-dimensional")
   
-  # RESULT
   NR <- nrow(M)
   NC <- ncol(M)
+  if(NR < 2 || NC < 2) stop("Matrix needs more rows and cols than 1")
   
+  # RESULT
   # Find pivot (first non-zero entry in column of the matrix).
   # I.e. sort into right order first
   for(r in 1L:min(NR, NC)) {
-    if(abs(M[r, r]) < tolerance) {# sort only when necessary
-      Pivot <- which.max(abs(M[r:NR, r]) > tolerance)
+    if(abs(M[r, r]) < Tolerance) {# sort only when necessary
+      Pivot <- which.max(abs(M[r:NR, r]) > Tolerance)
       Pivot <- Pivot + (r-1) # make sure that Pivot in [r,NR]
       
       # Move pivot row to row 'r'
-      if (abs(M[Pivot, r]) > tolerance) { # only sort if Pivot is not zero
+      if (abs(M[Pivot, r]) > Tolerance) { # only sort if Pivot is not zero
         if (r > 1)
           RowSort <- c( 1:(r-1), Pivot, (r:NR)[-(Pivot-r+1)] )
         else 
@@ -28,7 +47,7 @@ Echelon <- function(M, Reduced = FALSE,
     # Multiply each element in pivot row by the inverse of the pivot, 
     # so the pivot equals 1.
     #\for(r in 1L:min(NR, NC))
-    if(abs(M[r, r]) > tolerance)
+    if(abs(M[r, r]) > Tolerance)
       M[r, ] <- M[r, ] / M[r, r] # from now on Pivot row is r
       
     # Add multiples of pivot row to each of the lower rows, so every 
@@ -48,7 +67,8 @@ Echelon <- function(M, Reduced = FALSE,
       # Find pivot column
       PivCol <- match(1, M[r,]) #which.max(M[r,])
       if (is.na(PivCol)) next
-      
+      # Add multiples of the pivot row to each of the upper rows, 
+      # until every element above the pivot equals 0.
       Subtrahend <- M[(r-1):1, PivCol]
       Subtrahend <- Subtrahend %*% t(M[r, PivCol:NC])
       M[(r-1):1, PivCol:NC] <- M[(r-1):1, PivCol:NC] - Subtrahend
@@ -56,7 +76,7 @@ Echelon <- function(M, Reduced = FALSE,
   }
   
   # RETURN
-  M[abs(M) < tolerance] <- 0
+  M[abs(M) < Tolerance] <- 0
   return(M)
 }
 
