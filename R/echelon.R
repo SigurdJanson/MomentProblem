@@ -84,8 +84,22 @@ Echelon <- function(M, Reduced = FALSE,
 
 
 isEchelon <- function( M, Reduced = FALSE ) {
+  # PRECONDITIONS
+  if (!is.numeric(M) && !is.matrix(M))
+    stop("Input must be a numeric matrix.")
+  if (length(dim(M)) != 2) stop("Matrix must be 2-dimensional")
   NC <- ncol(M)
   NR <- nrow(M)
+  if (NR == 1)
+    if(M[1,1] != 1) return(FALSE)
+  if (NC == 1) {
+    if(M[1,1] != 1)
+      return(FALSE)
+    else # [1,1] is the pivot, all values below must be 0
+      if (sum(M) != 1) return(FALSE)
+  }
+      
+  # RESULT
   # If there are more rows than cols, additional rows must be all 0
   if (NR > NC) {
     if (sum(M[(NC+1):NR,]) > 0) return(FALSE)

@@ -13,6 +13,22 @@ test_that("Echelon Preconditions", {
                "Matrix needs more rows and cols than 1")
   expect_error(Echelon(matrix(1:12, ncol = 12)), 
                "Matrix needs more rows and cols than 1")
+  
+  #
+  # isEchelon()
+  expect_error(isEchelon("Hello"), 
+               "Input must be a numeric matrix.")
+  expect_error(isEchelon(array(1:12, dim = c(3,2,2))), 
+               "Matrix must be 2-dimensional")
+  expect_error(isEchelon(1:12), "Matrix must be 2-dimensional")
+})
+
+
+test_that("isEchelon(): Edge Cases", {
+  expect_true(isEchelon(matrix(1, ncol=1)))
+  expect_true(isEchelon(matrix(1:2, nrow=1)))
+  expect_false(isEchelon(matrix(1:2, ncol=1)))
+  expect_true(isEchelon(matrix(1:0, ncol=1)))
 })
 
 
@@ -232,6 +248,9 @@ test_that("Echelon - Comparison with pracma::rref", {
     Tolerance <- .Machine$double.eps * Size * max(abs(M))
     expect_silent(Echelon(M, Reduced = TRUE, Tolerance = Tolerance))
     expect_equal(Echelon(M, Reduced = TRUE, Tolerance = Tolerance), rref(M))
+    
+    expect_false(isEchelon(M))
+    expect_true(isEchelon(Echelon(M, Reduced = TRUE, Tolerance = Tolerance)))
   }
   
   # matrices with ncol < nrow
@@ -298,7 +317,9 @@ test_that("Echelon - Comparison with rref by Fox", {
 })
 
 test_that("Echelon - test basic criteria", {
-# A matrix that has undergone Gaussian elimination is said to be in row echelon form or, more properly, "reduced echelon form" or "row-reduced echelon form." Such a matrix has the following characteristics:
+# A matrix that has undergone Gaussian elimination is said to be in row echelon form or, 
+# more properly, "reduced echelon form" or "row-reduced echelon form." Such a matrix 
+# has the following characteristics:
 # 1. All zero rows are at the bottom of the matrix
 # 2. The leading entry of each nonzero row after the first occurs to the right of the leading entry of the previous row.
 # 3. The leading entry in any nonzero row is 1.
