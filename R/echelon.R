@@ -199,7 +199,17 @@ MatrixRank <- function( M ) {
 }
 
 
-SolutionSpace <- function( M ) {
-  
+#' SoluSetDim
+#' Interprets the matrix as system matrix and determines the dimensions
+#' of the solution set.
+#' @param M A numeric matrix.
+#'
+#' @return Number of dimensions to solution set.
+#' @export
+#' @author Jan Seifert
+#' @examples
+SoluSetDim <- function( M ) {
+  Rank <- MatrixRank(M[,1L:(ncol(M)-1L)])
+  return((ncol(M)-1L) - Rank)
 }
 

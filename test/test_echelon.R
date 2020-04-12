@@ -395,6 +395,13 @@ test_that("MatrixRank", {
   
   M <- matrix(c(1,2, 0,0, 0,0), nrow = 3, byrow = TRUE)
   expect_identical(MatrixRank(M), 1L)
+  
+  # Documented examples:
+  # https://www.mathebibel.de/rang-einer-matrix
+  M <- matrix(c(1,3,2, 2,4,4, 3,5,6), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 2L)
+  M <- matrix(c(0,-2,2,4, 2,-1,-1,1, 2,-2,0,3), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 2L)
 })
 
 
@@ -418,4 +425,34 @@ test_that("MatrixRank vs hasSolutions", {
         expect_identical(S, 1L)
     }
   }
+})
+
+
+# Dimensions of Solution Set ----
+test_that("SoluSetDims", {
+  expect_error(SoluSetDim(matrix(1, ncol=1)), 
+               "Matrix must be 2-dimensional")
+  expect_error(SoluSetDim(matrix(1:2, nrow=1)), 
+                   "Matrix must be 2-dimensional")
+  expect_error(SoluSetDim(matrix(1:0, ncol=1)), 
+                   "Matrix must be 2-dimensional")
+  
+  
+  # Varying solutions
+  M <- matrix(c(1,-1,1,1, 0, 1,-1,1, 0,0,1,-0.5, 0,0,0,1), nrow = 4, byrow=TRUE)
+  expect_identical(SoluSetDim(M), 0L)
+  
+  M <- matrix(c(1,2,3,2, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(SoluSetDim(M), 1L)
+  
+  M <- matrix(c(1,2,1, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(SoluSetDim(M), 0L)
+  
+  # Documented examples:
+  # https://www.mathebibel.de/rang-einer-matrix
+  M <- matrix(c(1,3,2, 2,4,4, 3,5,6), nrow = 3, byrow = TRUE)
+  expect_identical(SoluSetDim(M), 0L)
+  M <- matrix(c(0,-2,2,4, 2,-1,-1,1, 2,-2,0,3), nrow = 3, byrow = TRUE)
+  expect_identical(SoluSetDim(M), 1L)
+  
 })
