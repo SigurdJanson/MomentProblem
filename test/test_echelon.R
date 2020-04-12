@@ -370,3 +370,52 @@ test_that("hasSolutions", {
   expect_identical(hasSolutions(M), 1L)
 })
 
+
+
+# MatrixRank ----
+test_that("MatrixRank", {
+  # Edge cases
+  expect_identical(MatrixRank(matrix(1, ncol=1)), 1L)
+  expect_identical(MatrixRank(matrix(1:2, nrow=1)), 1L)
+  expect_identical(MatrixRank(matrix(1:0, ncol=1)), 1L)
+  
+  
+  # Varying solutions
+  M <- matrix(c(1,-1,1,1, 0, 1,-1,1, 0,0,1,-0.5, 0,0,0,1), nrow = 4, byrow=TRUE)
+  expect_identical(MatrixRank(M), 4L)
+  
+  M <- matrix(c(1,2,3,2, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 2L)
+  
+  M <- matrix(c(1,2,1, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 2L)
+  
+  M <- matrix(c(1,2, 0,1, 0,0), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 2L)
+  
+  M <- matrix(c(1,2, 0,0, 0,0), nrow = 3, byrow = TRUE)
+  expect_identical(MatrixRank(M), 1L)
+})
+
+
+
+test_that("MatrixRank vs hasSolutions", {
+  for(Size in c(6, 7, 8, 9, 10, 
+                11, 20, 24, 30, 40, 50, 100)) {
+    M <- matrix(sample.int(Size * (Size %/% 2), replace = TRUE),
+                nrow = Size)
+    EM <- Echelon(M)
+    
+    S <- hasSolutions(EM)
+    RM <- MatrixRank(EM) # system matrix
+    RM_ <- MatrixRank(EM[,1:(ncol(M)-1)]) # plain matrix
+    if (RM_ < RM) {
+      expect_identical(S, 0L)
+    } else {
+      if (RM < ncol(M))
+        expect_identical(S, Inf)
+      else if (RM == ncol(M))
+        expect_identical(S, 1L)
+    }
+  }
+})

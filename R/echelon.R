@@ -1,3 +1,4 @@
+# TODO: SUM is not appropriate to test if other positions are 0
 
 #' Echelon
 #' Compute the row echelon form of a matrix.
@@ -163,5 +164,13 @@ hasSolutions <- function( M ) {
   return(ifelse(PivotCount == NC-1L, 1L, Inf))
 }
 
+
+MatrixRank <- function( M ) {
+  # PRECONDITIONS (other conditions are handled by called functions)
+  if(!isEchelon(M)) M <- Echelon(M)
+  # RESULT
+  NotZero <- apply(M, 1, function(x) any(x != 0))
+  return(sum(NotZero))
+}
 
 
