@@ -144,6 +144,19 @@ isEchelon <- function( M, Reduced = FALSE ) {
 
 
 
+#' hasSolutions
+#' Tests if a matrix is solvable.
+#' @param M A numeric matrix.
+#' @return If the matrix represents an inconsistent not solvable matrix,
+#' the function returns 0. Otherwise it either returns `1` or `Inf` 
+#' depending on the number of solutions.
+#' @export
+#' @author Jan Seifert
+#' @examples
+#' # Test if matrix is solvable
+#' M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6))
+#' hasSolutions(M) > 0
+#' print(hasSolutions(M))
 hasSolutions <- function( M ) {
   # PRECONDITIONS (other conditions are handled by called functions)
   if(!isEchelon(M)) M <- Echelon(M)
@@ -170,6 +183,13 @@ hasSolutions <- function( M ) {
 }
 
 
+#' MatrixRank
+#' Returns the rank of a matrix.
+#' @param M A numeric matrix.
+#' @return An integer giving the rank of the matrix.
+#' @export
+#' @author Jan Seifert
+#' @examples
 MatrixRank <- function( M ) {
   # PRECONDITIONS (other conditions are handled by called functions)
   if(!isEchelon(M)) M <- Echelon(M)
