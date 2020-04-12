@@ -18,43 +18,59 @@ test_that("Echelon Preconditions", {
 
 test_that("Echelon (not reduced)", {
   # Echelon_Row_Reduction_in_R.pdf - self-computed solution
-  M <- matrix(c(1,-1,1,1, 1,-1,-1, 2, 1,1,-1,3, 1,1,1,4), nrow = 4, byrow=TRUE)
-  e <- matrix(c(1,-1,1,1, 0, 1, -1,1, 0,0,1,-0.5, 0,0,0,1), nrow = 4, byrow=TRUE)
+  M <- matrix(c(1,-1,1,1, 1,-1,-1,2, 1,1,-1,3,   1,1,1,4), nrow = 4, byrow=TRUE)
+  expect_false(isEchelon(M))
+  e <- matrix(c(1,-1,1,1, 0, 1,-1,1, 0,0,1,-0.5, 0,0,0,1), nrow = 4, byrow=TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M), e)
   # LinearDependence.pdf, example 3, S.2
-  M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6), nrow = 3, byrow = TRUE)
+  M <- matrix(c(1,2,3,2, 2,5,5,5,  2,6,4,6), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,2,3,2, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M), e)
   # https://stattrek.com/matrix-algebra/echelon-transform.aspx
   M <- matrix(c(0,1,2, 1,2,1, 2,7,8), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,2,1, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M), e)
   # https://stattrek.com/matrix-algebra/echelon-transform.aspx
   M <- matrix(c(0,1, 1,2, 0,5), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,2, 0,1, 0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M), e)
   
   M <- matrix(c(1,2,3, 4,5,6), nrow = 2, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,2,3, 0,1,2), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M), e)
 
   # These are already in echelon form and should return the input without changes
   M <- matrix(c(1,2,3,4, 0,0,1,3, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
   
   M <- matrix(c(1,2,0,0, 0,0,1,0, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
   
   M <- matrix(c(1,1,3, 0,0,1), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 
   M <- matrix(c(1,2,3, 0,1,2), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 
   M <- matrix(c(1,0,1,2, 0,1,1,1, 0,0,0,1), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
   
   M <- matrix(c(1,0,2,-2, 0,1,0,2, 0,0,0,1), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 })
 
@@ -62,70 +78,97 @@ test_that("Echelon (not reduced)", {
 test_that("Reduced Echelon", {
   # Echelon_Row_Reduction_in_R.pdf
   M <- matrix(c(1,-1,1,1, 1,-1,-1,2, 1,1,-1,3, 1,1,1,4), nrow = 4, byrow=TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,0,0,  0,1,0,0, 0,0,1,0, 0,0,0,1), nrow = 4, byrow=TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # LinearDependence.pdf, example 1, S.2 - self-computed solution
   M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,5,0, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # LinearDependance.pdf, example 2, S.3
   M <- matrix(c(1,2,4, 3,0,6, 2,2,6, 4,1,9), nrow = 4, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,2, 0,1,1, 0,0,0, 0,0,0), nrow = 4, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # LinearDependence.pdf, example 3, S.4
   M <- matrix(c(2,1,7, 5,6,7, 3,4,3), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,5, 0,1,-3, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # LinearDependence.pdf, example 4, S.5
   M <- matrix(c(1,2,2,   2,5,6, 3,5,4, 2,5,6), nrow = 4, byrow=TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,-2,  0,1,2, 0,0,0, 0,0,0), nrow = 4, byrow=TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # https://stattrek.com/matrix-algebra/echelon-transform.aspx
   M <- matrix(c(0,1,2, 1,2,1, 2,7,8), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,-3, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # https://stattrek.com/matrix-algebra/echelon-transform.aspx
   M <- matrix(c(0,1, 1,2, 0,5), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0, 0,1, 0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
+  expect_equal(Echelon(M, Reduced = TRUE), e)
+  # https://stattrek.com/matrix-algebra/echelon-transform.aspx
+  M <- matrix(c(0,1,2, 1,2,1, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_false(isEchelon(M))
+  e <- matrix(c(1,0,-3, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
   # https://www.wolframalpha.com/widgets/view.jsp?id=7eab3cc8b79a0665f796eea7c14b2d90
   M <- matrix(c(1,2,3, 4,5,6), nrow = 2, byrow = TRUE)
+  expect_false(isEchelon(M))
   e <- matrix(c(1,0,-1, 0,1,2), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_equal(Echelon(M, Reduced = TRUE), e)
-  
-  M <- matrix(c(1,0,1,2, 0,1,1,1, 0,0,0,1), nrow = 3, byrow = TRUE)
-  e <- matrix(c(1,0,1,0, 0,1,1,0, 0,0,0,1), nrow = 3, byrow = TRUE)
-  expect_identical(Echelon(M, Reduced = TRUE), e)
   
   
   #
   # These are already in echelon form and will be reduced
+  # no source
+  M <- matrix(c(1,0,1,2, 0,1,1,1, 0,0,0,1), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(M))
+  e <- matrix(c(1,0,1,0, 0,1,1,0, 0,0,0,1), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(e))
+  expect_identical(Echelon(M, Reduced = TRUE), e)
   # https://stattrek.com/matrix-algebra/echelon-transform.aspx
   M <- matrix(c(1,2,3,4, 0,0,1,3, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
-  M <- matrix(c(1,2,0,0, 0,0,1,0, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
-  expect_identical(Echelon(M, Reduced = TRUE), M)
-  # https://stattrek.com/matrix-algebra/echelon-transform.aspx
-  M <- matrix(c(0,1,2, 1,2,1, 0,0,0), nrow = 3, byrow = TRUE)
-  e <- matrix(c(1,0,-3, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
-  expect_equal(Echelon(M, Reduced = TRUE), e)
+  expect_true(isEchelon(M))
+  e <- matrix(c(1,2,0,0, 0,0,1,0, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
+  expect_identical(Echelon(M, Reduced = TRUE), e)
   
   M <- matrix(c(1,2,3, 0,1,2), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(M))
   e <- matrix(c(1,0,-1, 0,1,2), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(e))
   expect_identical(Echelon(M, Reduced = TRUE), e)
   
   M <- matrix(c(1,0,2,-2, 0,1,0,2, 0,0,0,1), nrow = 3, byrow = TRUE)
+  expect_true(isEchelon(M))
   e <- matrix(c(1,0,2,0, 0,1,0,0, 0,0,0,1), nrow = 3, byrow = TRUE)
   expect_identical(Echelon(M, Reduced = TRUE), e)
   
   #
   # These are already in reuced echelon form and will be kept
   M <- matrix(c(1,1,3, 0,0,1), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 
   M <- matrix(c(1,0,3, 0,1,1), nrow = 2, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 
   M <- matrix(c(1,2,0,0, 0,0,1,0, 0,0,0,1, 0,0,0,0), nrow = 4, byrow = TRUE)
+  expect_true(isEchelon(M))
   expect_identical(Echelon(M), M)
 })
 
@@ -178,7 +221,7 @@ test_that("Echelon - Comparison with pracma::rref", {
       sample.int(Size * Size, replace = TRUE),
       ncol = Size)
     Tolerance <- .Machine$double.eps * Size * max(abs(M))
-    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+    expect_equal(Echelon(M, Reduced = TRUE, Tolerance = Tolerance), rref(M))
   }
   
   # matrices with ncol > nrow
@@ -187,8 +230,8 @@ test_that("Echelon - Comparison with pracma::rref", {
       sample.int(Size * (Size %/% 2), replace = TRUE),
       ncol = Size)
     Tolerance <- .Machine$double.eps * Size * max(abs(M))
-    expect_silent(Echelon(M, Reduced = TRUE, tolerance = Tolerance))
-    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+    expect_silent(Echelon(M, Reduced = TRUE, Tolerance = Tolerance))
+    expect_equal(Echelon(M, Reduced = TRUE, Tolerance = Tolerance), rref(M))
   }
   
   # matrices with ncol < nrow
@@ -197,8 +240,8 @@ test_that("Echelon - Comparison with pracma::rref", {
       sample.int(Size * (Size %/% 2), replace = TRUE),
       nrow = Size)
     Tolerance <- .Machine$double.eps * Size * max(abs(M))
-    expect_silent(Echelon(M, Reduced = TRUE, tolerance = Tolerance))
-    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+    expect_silent(Echelon(M, Reduced = TRUE, Tolerance = Tolerance))
+    expect_equal(Echelon(M, Reduced = TRUE, Tolerance = Tolerance), rref(M))
   }
   
 })
@@ -250,7 +293,7 @@ test_that("Echelon - Comparison with rref by Fox", {
       sample.int(Size * Size, replace = TRUE),
       ncol = Size)
     Tolerance <- .Machine$double.eps * Size * max(abs(M))
-    expect_equal(Echelon(M, Reduced = TRUE, tolerance = Tolerance), rref(M))
+    expect_equal(Echelon(M, Reduced = TRUE, Tolerance = Tolerance), rref(M))
   }
 })
 

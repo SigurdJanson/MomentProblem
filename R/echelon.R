@@ -1,6 +1,6 @@
 
 #' Echelon
-#' Compute the echelon form of a matrix.
+#' Compute the row echelon form of a matrix.
 #' @param M A numeric matrix with at least two rows and columns
 #' @param Reduced If `TRUE` the function will return the echelon in its 
 #' reduced form.
@@ -8,6 +8,7 @@
 #' zero.
 #' @return A numeric matrix in the requested form.
 #' @author Jan Seifert
+#' @source Instructions from https://stattrek.com/matrix-algebra/echelon-transform.aspx
 #' @export
 #' @examples
 #' M <- matrix(c(1,2,3,2, 2,5,5,5, 2,6,4,6))
@@ -82,6 +83,49 @@ Echelon <- function(M, Reduced = FALSE,
 
 
 
+isEchelon <- function( M, Reduced = FALSE ) {
+  NC <- ncol(M)
+  NR <- nrow(M)
+  # If there are more rows than cols, additional rows must be all 0
+  if (NR > NC) {
+    if (sum(M[(NC+1):NR,]) > 0) return(FALSE)
+    # Drop zero rows to get a square matrix
+    M <- M[1:NC,]
+    NR <- NC
+  }
+  # At this point is guaranteed: NR <= NC
+  
+  # All values in lower triangle must be zero
+  if (sum( M[lower.tri(M)] ) > 0) return(FALSE)
+  # 
+  R1 <- 1
+  while (!is.na(R1)) {
+    # Diagonal can only be 1 or zero
+    D <- diag(M)
+    if (!all(D %in% c(0, 1))) return(FALSE)
+    # Ignore all rows where Pivot is in diagonal
+    R1 <- match(0, D)
+    if(is.na(R1)) return(TRUE)
+    # ... and get new sub-matrix to test the diagonal
+    # Get upper left corner of sub-atrix where M[R1,j] == 1
+    C1 <- match(1, M[R1,])
+    if (is.na(C1)) {  # We have left last pivot behind
+      if (sum(M[R1:NR, ]) > 0)
+        return(FALSE)
+      else
+        return(TRUE)
+    }
+    M <- M[R1:NR, C1:NC]
+    NR <- NR-R1
+    NC <- NC-C1
+  }
+}
+
+
+
+isInconsistent <- function( M ) {
+  lower.tri(mat)
+}
 
 
 
