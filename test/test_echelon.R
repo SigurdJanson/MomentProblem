@@ -2,6 +2,7 @@ setwd("..")
 source("./R/echelon.R")
 setwd("./test")
 
+# Echelon ----
 test_that("Echelon Preconditions", {
   expect_error(Echelon("Hello"), 
                "Input must be a numeric matrix.")
@@ -316,6 +317,7 @@ test_that("Echelon - Comparison with rref by Fox", {
   }
 })
 
+
 test_that("Echelon - test basic criteria", {
 # A matrix that has undergone Gaussian elimination is said to be in row echelon form or, 
 # more properly, "reduced echelon form" or "row-reduced echelon form." Such a matrix 
@@ -332,3 +334,39 @@ test_that("Echelon - test basic criteria", {
   
   succeed()
 })
+
+
+# hasSolutions ----
+test_that("hasSolutions: Preconditions", {
+  expect_error(hasSolutions("Hello"), 
+               "Input must be a numeric matrix.")
+  expect_error(hasSolutions(matrix(1:2, ncol=1)), 
+               "Matrix needs more rows and cols than 1")
+  
+})
+
+
+test_that("hasSolutions", {
+  # Edge cases
+  expect_identical(hasSolutions(matrix(1, ncol=1)), 0L)
+  expect_identical(hasSolutions(matrix(1:2, nrow=1)), 1L)
+  expect_identical(hasSolutions(matrix(1:0, ncol=1)), 0L)
+  
+  
+  # Varying solutions
+  M <- matrix(c(1,-1,1,1, 0, 1,-1,1, 0,0,1,-0.5, 0,0,0,1), nrow = 4, byrow=TRUE)
+  expect_identical(hasSolutions(M), 0L)
+  
+  M <- matrix(c(1,2,3,2, 0,1,-1,1, 0,0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(hasSolutions(M), Inf)
+  
+  M <- matrix(c(1,2,1, 0,1,2, 0,0,0), nrow = 3, byrow = TRUE)
+  expect_identical(hasSolutions(M), 1L)
+  
+  M <- matrix(c(1,2, 0,1, 0,0), nrow = 3, byrow = TRUE)
+  expect_identical(hasSolutions(M), 0L)
+  
+  M <- matrix(c(1,2, 0,0, 0,0), nrow = 3, byrow = TRUE)
+  expect_identical(hasSolutions(M), 1L)
+})
+

@@ -133,12 +133,34 @@ isEchelon <- function( M, Reduced = FALSE ) {
     NR <- NR-R1
     NC <- NC-C1
   }
+  return(TRUE) # code should never reach this point
 }
 
 
 
-isInconsistent <- function( M ) {
-  lower.tri(mat)
+hasSolutions <- function( M ) {
+  # PRECONDITIONS (other conditions are handled by called functions)
+  if(!isEchelon(M)) M <- Echelon(M)
+  # RESULT
+  PivotCount <- 0L
+  NC <- ncol(M)
+  NR <- nrow(M)
+  for(c in NC:1L) {
+    PivotRow <- rev(M[,c]) == 1L
+    PivotRow <- NR - which.max(PivotRow) +1
+    # Verify
+    if (M[PivotRow, c] == 1) {
+      if (c == 1L)
+        PivotCount <- PivotCount +1L
+      else if (all(M[PivotRow, 1L:(c-1L)] == 0))
+        PivotCount <- PivotCount +1L
+    }
+    
+    # Pivot in last col, system is inconsistent
+    if(PivotCount == 1L && c == NC)
+      return(0L)
+  }
+  return(ifelse(PivotCount == NC-1L, 1L, Inf))
 }
 
 
