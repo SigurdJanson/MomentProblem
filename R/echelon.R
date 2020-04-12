@@ -1,8 +1,6 @@
-# TODO: SUM is not appropriate to test if other positions are 0
-
 #' Echelon
 #' Compute the row echelon form of a matrix.
-#' @param M A numeric matrix with at least two rows and columns
+#' @param M A numeric matrix with at least two rows and columns.
 #' @param Reduced If `TRUE` the function will return the echelon in its 
 #' reduced form.
 #' @param Tolerance The smallest value that is considered different from
@@ -84,6 +82,16 @@ Echelon <- function(M, Reduced = FALSE,
 
 
 
+#' isEchelon
+#' Test if a matrix satisfies the echelon conditions.
+#' @param M A numeric matrix.
+#' @param Reduced If `TRUE`, this function tests for reduced echelon form.
+#' `FALSE` (the default) tests for the plain form.
+#'
+#' @return `TRUE` if the echelon form is satsified.
+#' @export
+#' @author Jan Seifert
+#' @examples
 isEchelon <- function( M, Reduced = FALSE ) {
   # PRECONDITIONS
   if (!is.numeric(M) && !is.matrix(M))
@@ -92,18 +100,18 @@ isEchelon <- function( M, Reduced = FALSE ) {
   NC <- ncol(M)
   NR <- nrow(M)
   if (NR == 1)
-    if(M[1,1] != 1) return(FALSE)
+    return(M[1,1] == 1)
   if (NC == 1) {
     if(M[1,1] != 1)
       return(FALSE)
     else # [1,1] is the pivot, all values below must be 0
-      if (sum(M) != 1) return(FALSE)
+      return(all(M[2:nrow(M), 1] == 0))
   }
       
   # RESULT
   # If there are more rows than cols, additional rows must be all 0
   if (NR > NC) {
-    if (sum(M[(NC+1):NR,]) > 0) return(FALSE)
+    if (any(M[(NC+1):NR,] > 0)) return(FALSE)
     # Drop zero rows to get a square matrix
     M <- M[1:NC,]
     NR <- NC
@@ -111,7 +119,7 @@ isEchelon <- function( M, Reduced = FALSE ) {
   # At this point is guaranteed: NR <= NC
   
   # All values in lower triangle must be zero
-  if (sum( M[lower.tri(M)] ) > 0) return(FALSE)
+  if (any( M[lower.tri(M)] > 0)) return(FALSE)
   # 
   R1 <- 1
   while (!is.na(R1)) {
@@ -125,10 +133,7 @@ isEchelon <- function( M, Reduced = FALSE ) {
     # Get upper left corner of sub-atrix where M[R1,j] == 1
     C1 <- match(1, M[R1,])
     if (is.na(C1)) {  # We have left last pivot behind
-      if (sum(M[R1:NR, ]) > 0)
-        return(FALSE)
-      else
-        return(TRUE)
+      return(all(M[R1:NR, ] == 0))
     }
     M <- M[R1:NR, C1:NC]
     NR <- NR-R1
@@ -173,4 +178,8 @@ MatrixRank <- function( M ) {
   return(sum(NotZero))
 }
 
+
+SolutionSpace <- function( M ) {
+  
+}
 
