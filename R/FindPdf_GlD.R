@@ -91,7 +91,8 @@ source("./R/FindPdf_Root.R")
 
 #' .Delta_GLD
 #' Helper function to compute the distance from the expected values
-#' of the third and fourth moment.
+#' of the third and fourth moment. This is the objective function 
+#' using only A3/A4.
 #' 
 #' The output of this function must be optimised.
 #' @param L Vector containing lambda3 and 4
@@ -157,11 +158,12 @@ source("./R/FindPdf_Root.R")
   else
     Delta4 <- Delta3 # When symmetry: L3 = L4
   
-  
-  if(MinMax == 0)
-    return( Delta1 + Delta2 + Delta3 + Delta4 )
-  else
-    return( 1 / (Delta1 + Delta2 + Delta3 + Delta4) )
+  DeltaAll <- Delta1 + Delta2 + Delta3 + Delta4
+  if(is.na(DeltaAll) || is.nan(DeltaAll) || is.infinite(DeltaAll))
+    DeltaAll <- 999999
+  if(MinMax == 1)
+    DeltaAll <- 1 / DeltaAll
+  return(DeltaAll)
 }
 
 
@@ -219,7 +221,7 @@ source("./R/FindPdf_Root.R")
 
 
 #' .FindPDF_GLD_A3A4
-#'
+#' 
 #' @param Moments Vector holding the first four moments.
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
 #' are not reported. The default value is close to 1.5e-8.
@@ -247,10 +249,10 @@ source("./R/FindPdf_Root.R")
     Lambda[3] <- r$par[1]
     Lambda[4] <- r$par[1]
   } else {
-    GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaA3A4GLD(x, ...),
-             A3 = Moments["Skew"], A4 = Moments["Kurt"], MinMax = 1, 
-             lower = c(-0.25, -0.25), upper = c(50, 50),
-             popSize = 100, maxiter = 500, run = 100, pmutation = 0.15)
+    # GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaA3A4GLD(x, ...),
+    #          A3 = Moments["Skew"], A4 = Moments["Kurt"], MinMax = 1, 
+    #          lower = c(-0.25, -0.25), upper = c(50, 50),
+    #          popSize = 100, maxiter = 500, run = 100, pmutation = 0.15)
     #print(summary(GA))
     #plot(GA)
     #GA@solution[1,] - c(-0.15, -0.15)
@@ -289,41 +291,40 @@ source("./R/FindPdf_Root.R")
 #'
 #' @author Jan Seifert
 #' @examples
-.FindPDF_GLD <- function( TarMo, InitLambda, Tolerance = sqrt(.Machine$double.eps) ) {
+.FindPDF_GLD <- function( TarMo, InitLambda, Lower, Upper,
+                          Tolerance = sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
   names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
   
-  # In case of symmetry: lambda3 = lambda4
-  # i.e. only 4 parameter to estimate
-  # if(TarMo[3] == 0) 
-  #   InitLambda <- runif(3, -0.25, 5)
-  # else
-  #   InitLambda <- runif(4, -0.25, 5) # initial values to start optimisation
-  
   # Genetic algorithm first: locate the general vicinity of the minimum
-  GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
-           A = TarMo, MinMax = 1, 
-           lower = rep(-0.25, length(InitLambda)), 
-           upper = rep(+25.0, length(InitLambda)),
-           popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
-           monitor = FALSE)
-  #print(summary(GA))
-  #plot(GA)
-  #GA@solution[1,] - c(-0.15, -0.15)
-  #print(GA@solution[1,])
-  r <- optimx(GA@solution[1,], method = c("Nelder-Mead"), 
-              fn = .DeltaAllGLD, A = TarMo, 
+  # GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
+  #          A = TarMo, MinMax = 1, 
+  #          lower = Lower, 
+  #          upper = Upper,
+  #          popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
+  #          monitor = FALSE)
+  
+  #TODO: constrOptim
+  #Box-constraint, optimum on the boundary
+  # constrOptim(c(-1.2,0.9), fr, grr, ui = rbind(c(-1,0), c(0,-1)), ci = c(-1,-1))
+  # r <- constrOptim(theta = InitLambda, method = c("Nelder-Mead"), 
+  #             lower = Lower, upper = Upper,
+  #             f = .DeltaAllGLD, A = TarMo, 
+  #             control = list(reltol = Tolerance, maxit = 50000) )
+  r <- optimx(InitLambda, method = c("Nelder-Mead"), #GA@solution[1,] # L-BFGS-B
+              lower = Lower, upper = Upper,
+              fn = .DeltaAllGLD, A = TarMo,
               control = list(reltol = Tolerance, maxit = 50000) )
   ###TODO: check if successful, first
-  Lambda[1] <- r$x1 
-  Lambda[2] <- r$x2 
-  Lambda[3] <- r$x3 
+  if (r$convcode != 0) print(r$convcode)
+  Lambda[1] <- r$p1 
+  Lambda[2] <- r$p2 
+  Lambda[3] <- r$p3 
   if(TarMo[3] == 0) # Symmetry: lambda3 = lambda4
     Lambda[4] <- Lambda[3]
   else
-    Lambda[4] <- r$x4
+    Lambda[4] <- r$p4
   
-  #print(Lambda)
   return(Lambda)
 }
 
@@ -347,9 +348,10 @@ New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
   
   this$Function   <- "gl"
   # Dimensions of the parameter space of the PDF
-  Dim12 <- c(-25, 25)   #-+25 is arbitrary
-  Dim34 <- c(-0.25, 25) # -0.25 is the defined limit of the range of def.
-  this$ParamSpace <- matrix(data = c(Dim12, Dim12, Dim34, Dim34),
+  Dim1  <- c(-500,  500)   #-+500 is arbitrary
+  Dim2  <- c(0,     500)
+  Dim34 <- c(-0.25, 500) # -0.25 is the defined limit of the range of def.
+  this$ParamSpace <- matrix(data = c(Dim1, Dim2, Dim34, Dim34),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
   
@@ -398,7 +400,10 @@ FindPdf.gld <- function( Pdf, LaunchPoint, Append = FALSE ) {
   LP <- Pdf$LaunchSpace[LaunchPoint, ]
 
   # Get a resulting PDF
-  Lambda <- .FindPDF_GLD( Pdf$TarMo, LP, Pdf$Tolerance )
+  Lambda <- .FindPDF_GLD( Pdf$TarMo, LP, 
+                          Lower = Pdf$ParamSpace["from"], 
+                          Upper = Pdf$ParamSpace["to"], 
+                          Pdf$Tolerance )
   
   # Determine distance to desired solution
   Pdf <- AddSolution( Pdf, LaunchPoint, 

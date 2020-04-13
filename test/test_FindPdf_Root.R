@@ -1,4 +1,3 @@
-#library(testthat)
 setwd("..")
 source("./R/FindPdf_Root.R")
 setwd("./test")

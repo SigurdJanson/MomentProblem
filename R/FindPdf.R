@@ -26,25 +26,26 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
   TargetFunction <- list("dnorm", list(mean = 0, sd = 1))
   Pdf <- New_ByMomentPdf.gld(TarMo, TarFu = TargetFunction)
   if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 0")
-  Pdf <- GetLaunchSpace(Pdf, 4, "Harmonic")
-  if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 1")
-  
+  Pdf <- GetLaunchSpace(Pdf, 400, "Harmonic")
+
   # Converge for each launch point
   for(LP in 1:nrow(Pdf$LaunchSpace)) {
     Pdf <- FindPdf( Pdf, LP, Append = TRUE )
-    if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 2")
   }
 
   UsePdf <- TRUE
   Pdf  <- EvaluatePdf(Pdf, UsePdf = UsePdf)
-  Best <- BestSolution(Pdf, Usepdf = UsePdf)
+  Best <- BestSolution(Pdf, UsePdf = UsePdf)
   
   # probably provide histogram of distances across solutions
   #if(Plot) {
   if(!is.null(Pdf$DistaFu)) {
-    Data <- data.frame(Distance = Pdf$DistaFu)
-    ggplot(data = Data, aes(x = Distance)) + 
-      geom_histogram()
+    ID <- unlist(lapply(Pdf$DistaFu, `[`, "ID"))
+    Distance <- unlist(lapply(Pdf$DistaFu, `[`, "Delta"))
+    Data <- data.frame(ID, Distance)
+    print({
+      ggplot(data = Data, aes(x = Distance)) + 
+      geom_histogram() })
   }
   if(!is.null(Pdf$DistaMo)) {
     Data <- data.frame(Distance = Pdf$DistaFu)
@@ -61,3 +62,4 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
 }
 
 Pdf <- GetPdf(c(0, 1, 0, 3), "gld")
+
