@@ -96,8 +96,8 @@ New_ByMomentPdf.default <- function( TarMo = NULL, TarFu = NULL ) {
 
 
 # Probability distribution functions ----
-#' Underlying probability distribution
-#' Density, distribution function, quantile function and random generation 
+#' Wrappers to call the underlying probability distribution, 
+#' density, distribution function, quantile function and random generation. 
 #' function. Calls the according function in `Pdf$Function`.
 #' @param Pdf A `ByMomentPdf` object.
 #' @param x,q Vector of quantiles.
@@ -571,6 +571,24 @@ summary.ByMomentPdf <- function( object, ...) {
 
 
 
+#' plot.ByMomentPdf
+#' Plot a distributions function for a selected solution.
+#' @param Pdf An object of class `ByMomentPdf`.
+#' @param ParamSet Either a single integer as index for the selected 
+#' `Pdf$ParamSolved` or a list with the parameters to be passed on to the
+#' distribution function.
+#' @param X The coordinates of points in the plot.
+#' @param Type The type of distribution function is either "d" für probability 
+#' density function, "p" probability distribution function, or "q" for 
+#' the quantile function.
+#' @param AddTarFu If `TRUE`the target function will be added to the plot 
+#' (works only for dxxx-functions at the moment).
+#' @param ... Additional arguments passed on to plot or the distribution 
+#' function.
+#' @return -
+#' @export
+#' @author Jan Seifert
+#' @examples
 plot.ByMomentPdf <- function( Pdf, ParamSet, X = NULL, Type = c(d, p, q), 
                               AddTarFu = FALSE, ...) {
   # PRECONDITIONS
@@ -594,7 +612,7 @@ plot.ByMomentPdf <- function( Pdf, ParamSet, X = NULL, Type = c(d, p, q),
     YLab <- ""
   }
   Main <- paste(Pdf$Function, format(Param, digits = 2), collapse = ", ")
-  plot(X, Y, type = "l", main = Main, xlab = XLab, ylab = YLab)
+  plot(X, Y, type = "l", main = Main, xlab = XLab, ylab = YLab, ...)
   
   if(AddTarFu) {
     #TODO: Type not supported here
@@ -605,6 +623,17 @@ plot.ByMomentPdf <- function( Pdf, ParamSet, X = NULL, Type = c(d, p, q),
 
 
 
+#' hist.ByMomentPdf
+#' A histogram of distances between the solutions and the target.
+#' @param Pdf An object of class `ByMomentPdf`.
+#' @param UsePdf  If `TRUE` the distance between found and desired solutions
+#' is determined using the Pdf. If `FALSE` only the moment vectors will be 
+#' used. Default is `FALSE`.
+#' @return A histogram that shows the distribution of distance of all
+#' solutions.
+#' @export
+#' @author Jan Seifert
+#' @examples
 hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   if(UsePdf && is.null(Pdf$DistaFu)) 
     stop("Pdf has not been evaluated.")
@@ -619,7 +648,7 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     Data <- data.frame(Distance = Pdf$DistaFu)
   }
   
-  p <- ggplot(data = Data, aes(x = Distance)) + 
+  p <- ggplot(data = Data, aes(x = Distance, na.rm = TRUE)) + 
          geom_histogram()
   print(p)
   invisible(p)
