@@ -1,6 +1,7 @@
 source("./R/HarmonicScatter.R")
 source("./R/RandomScatter.R")
 source("./R/CubicScatter.R")
+source("./R/Helper_FindPdf_Root.R")
 
 #' Data structure contaning the information required to approximate
 #' a PDF given specific moments.
@@ -102,7 +103,8 @@ New_ByMomentPdf.default <- function( TarMo = NULL, TarFu = NULL ) {
 #' @param x,q Vector of quantiles.
 #' @param p vector of probabilities.
 #' @param n Number of observations. If length(n) > 1, the length is taken to be the number required.
-#' @param ParamSet The arguments passed on to the 
+#' @param ParamSet The arguments passed on to the function. Either a list
+#' or the index of the correct parameter in `Pdf$ParamSolved`.
 #' @param ... Further arguments passed on to `Pdf$Function`.
 #' @return Returns the result of the distribution function.
 #' @export
@@ -115,10 +117,15 @@ dPdf <- function(Pdf, x, ParamSet, ...) {
 
 dPdf.ByMomentPdf <- function(Pdf, x, ParamSet, ...) {
   FName <- paste0("d", Pdf$Function)
-  if(is.list(ParamSet)) Param <- ParamSet
-  else Param <- Pdf$ParamSolved[ParamSet, ]
-  
-  do.call( FName, append(list(x = x), c(Param, list(...))) )
+  if(is.list(ParamSet)) 
+    Param <- ParamSet
+  else {
+    Indices   <- lapply(Pdf$ParamSolved, `[[`, 1)
+    Solutions <- lapply(Pdf$ParamSolved, `[[`, 2)
+    Param <- unlist(Solutions[Indices == ParamSet])
+  }
+
+  do.call( FName, c(list(x = x), c(Param, list(...))) )
 }
 
 #' pPdf
@@ -132,7 +139,7 @@ pPdf.ByMomentPdf <- function(Pdf, q, ParamSet, ...) {
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
   
-  do.call( FName, append(list(q = q), Param, ...) )
+  do.call( FName, append(list(q = q), c(Param, list(...))) )
 }
 
 #' qPdf
@@ -146,7 +153,7 @@ qPdf.ByMomentPdf <- function(Pdf, p, ParamSet, ...) {
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
   
-  do.call( FName, append(list(p = p), Param, ...) )
+  do.call( FName, append(list(p = p), c(Param, list(...))) )
 }
 
 #' rPdf
@@ -160,7 +167,7 @@ rPdf.ByMomentPdf <- function(Pdf, n, ParamSet, ...) {
   if(is.list(ParamSet)) Param <- ParamSet
   else Param <- Pdf$ParamSolved[ParamSet, ]
   
-  do.call( FName, append(list(n = n), Param, ...) )
+  do.call( FName, append(list(n = n), c(Param, list(...))) )
 }
 
 
@@ -170,6 +177,9 @@ SolutionMoments <- function(Pdf, ...) {
 }
 
 
+
+
+# Launch Space ----
 
 #' GetLaunchSpace
 #' Generate a list of launch coordinates as starting points in the
@@ -259,6 +269,10 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
 SetLaunchSpace <- function( LaunchSpace ) {
   UseMethod("SetLaunchSpace")
 }
+
+
+
+# Solutions ----
 
 #' AddSolution
 #' Adds a new optimisation result to the solutions. 
@@ -403,12 +417,9 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     if(require(philentropy, quietly = TRUE) == FALSE)
       stop("Package 'philentropy' is not available")
     # 
-    BaseRange <- c(-5, 5)
-    EvalRange <- Pdf$TarMo[1] + BaseRange * Pdf$TarMo[2]
-    EvalResolution <- diff(BaseRange) * 1E3
-    x <- seq(EvalRange[1], EvalRange[2], length.out = EvalResolution)
+    x <- .plotrange.ByMomentpdf(Pdf)
     #
-    Solutions <- lapply(Pdf$ParamSolved, `[`, 2)
+    Solutions <- lapply(Pdf$ParamSolved, `[[`, 2)
     DResult <- list()
     Pos <- 1
     for(s in Solutions) {
@@ -419,7 +430,7 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
                                    Delta = NA)))
       } else {
         # Compute distance
-        SoluResult  <- dPdf(Pdf, x, s) # get PDF(x)
+        SoluResult  <- dPdf(Pdf, x, as.list(s)) # get PDF(x)
         TarFuResult <- do.call( Pdf$TarFu[[1]], c(list(x = x), Pdf$TarFu[[2]]) )
         D <- jeffreys(TarFuResult, SoluResult, TRUE, "log2")
         DResult <- c(DResult, list(list(ID = Pdf$ParamSolved[[Pos]][[1]], 
@@ -507,6 +518,8 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
 
 
 
+# Output ----
+
 #' summary.ByMomentPdf
 #' Result summaries of the results of optimisation function to identify 
 #' probability distributions by moments.
@@ -553,5 +566,39 @@ summary.ByMomentPdf <- function( object, ...) {
     output(DistanceMethod, round(Distance, digits = 4))
     output("")
     print(round(Best, digits = 4), rownames = FALSE)
+  }
+}
+
+
+
+plot.ByMomentPdf <- function( Pdf, ParamSet, X = NULL, Type = c(d, p, q), 
+                              AddTarFu = FALSE, ...) {
+  # PRECONDITIONS
+  Type <- ifelse(missing(Type), "d", match.arg(Type))
+  if(is.list(ParamSet)) Param <- ParamSet
+  else Param <- Pdf$ParamSolved[ParamSet, ]
+  X <- .plotrange.ByMomentpdf(Pdf, X)
+  
+  # RESULT
+  if(Type == "d") {
+    Y  <- dPdf(Pdf, X, Param) 
+    XLab <- "x"
+    YLab <- "Density"
+  } else if (Type == "p") {
+    Y  <- pPdf(Pdf, X, Param)
+    XLab <- "q"
+    YLab <- ""
+  } else if (Type == "q") {
+    Y  <- qPdf(Pdf, X, Param) 
+    XLab <- "p"
+    YLab <- ""
+  }
+  Main <- paste(Pdf$Function, format(Param, digits = 2), collapse = ", ")
+  plot(X, Y, type = "l", main = Main, xlab = XLab, ylab = YLab)
+  
+  if(AddTarFu) {
+    #TODO: Type not supported here
+    Y <- do.call( Pdf$TarFu[[1]], c(list(x = X), Pdf$TarFu[[2]]) )
+    lines(X, Y, col = "cyan")
   }
 }

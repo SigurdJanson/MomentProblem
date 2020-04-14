@@ -47,6 +47,13 @@ test_that("Density, distribution, quantile & random function", {
                 dnorm(-5:5, mean = 0, sd = 1) )
   expect_equal( dPdf(Pdf, -5:5, ParamSet = NULL, mean = 2, sd = 0.1),
                 dnorm(-5:5, mean = 2, sd = 0.1) )
+  # Third form, normal distribution
+  Pdf$ParamSolved <- list(list(1, c(mean = 0, sd = 1)),
+                          list(2, c(mean = 2, sd = 0.1)))
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = 1),
+                dnorm(-5:5, mean = 0, sd = 1) )
+  expect_equal( dPdf(Pdf, -5:5, ParamSet = 2),
+                dnorm(-5:5, mean = 2, sd = 0.1) )
   
   # First form, Generalised Gamma distribution
   require(gld)
