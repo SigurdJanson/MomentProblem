@@ -486,7 +486,7 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   
   # Get the index of the solutions with best results
   Distances <- unlist(lapply(DistaXx, `[`, 2))
-  Best <- which(Distances == min(Distances))
+  Best <- which(Distances == min(Distances, na.rm = TRUE))
   
   # Get all the parameter sets yielding best results
   BestParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
@@ -494,8 +494,52 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   UniBestParamSets <- unique(BestParamSets)
   NBest <- length(UniBestParamSets)
 
-  UniBestParamSets <- matrix(unlist(UniBestParamSets), 
-                             nrow = NBest, byrow = TRUE)
+  if (length(UniBestParamSets) > 0) {
+    UniBestParamSets <- matrix(unlist(UniBestParamSets), 
+                               nrow = NBest, byrow = TRUE)
+    colnames(UniBestParamSets) <- paste0("Param", 1:ncol(UniBestParamSets))
+  }
   
   return(UniBestParamSets)
+}
+
+
+
+
+summary.ByMomentPdf <- function( object, ...) {
+  title  <- function(t) cat(paste0("\n", t, ":\n"))
+  output <- function(x, y = "") {
+    cat(paste0("   ", x, "  ", paste(y, collapse = ", "), "\n"))
+  }
+  
+  title("Call")
+  output("Method:", object$Function)
+  output("Target moments", object$TarMo)
+  output("Starting points", nrow(object$LaunchSpace))
+  
+  title("Results")
+  output("Solutions", length(object$ParamSolved))
+  
+  title("Best solution")
+  if (!is.null(object$DistaFu)) {
+    Best <- BestSolution(object, UsePdf = TRUE)
+    DistanceMethod <- "Jeffreys Distance"
+    Distances <- unlist(lapply(object$DistaFu, `[`, 2))
+    Distance <- min(Distances, na.rm = TRUE)
+  }
+  else if (!is.null(object$DistaFu)) {
+    Best <- BestSolution(object, UsePdf = FALSE)
+    DistanceMethod <- "Euclidean Distance"
+    Distances <- unlist(lapply(object$DistaFu, `[`, 2))
+    Distance <- min(Distances, na.rm = TRUE)
+  }
+  else
+    output("No solutions available")
+  
+  if (!is.null(nrow(Best))) {
+    cat("   ", nrow(Best), " solutions with best characteristics\n")
+    output(DistanceMethod, round(Distance, digits = 4))
+    output("")
+    print(round(Best, digits = 4), digits = 4)
+  }
 }
