@@ -507,6 +507,15 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
 
 
 
+#' summary.ByMomentPdf
+#' Result summaries of the results of optimisation function to identify 
+#' probability distributions by moments.
+#' @param object an object for which a summary is desired.
+#' @param ... additional arguments affecting the summary produced.
+#' @return Nothing
+#' @export
+#' @author Jan Seifert
+#' @examples
 summary.ByMomentPdf <- function( object, ...) {
   title  <- function(t) cat(paste0("\n", t, ":\n"))
   output <- function(x, y = "") {
@@ -514,9 +523,11 @@ summary.ByMomentPdf <- function( object, ...) {
   }
   
   title("Call")
-  output("Method:", object$Function)
-  output("Target moments", object$TarMo)
-  output("Starting points", nrow(object$LaunchSpace))
+  o <- rbind(Method = object$Function,
+             TargetMoments = paste0(object$TarMo, collapse = ", "),
+             StartingPoints = nrow(object$LaunchSpace))
+  colnames(o) <- ""
+  print(o, quote = FALSE)
   
   title("Results")
   output("Solutions", length(object$ParamSolved))
@@ -538,9 +549,9 @@ summary.ByMomentPdf <- function( object, ...) {
     output("No solutions available")
   
   if (!is.null(nrow(Best))) {
-    cat("   ", nrow(Best), " solutions with best characteristics\n")
+    cat("  ", nrow(Best), "solutions with best characteristics\n")
     output(DistanceMethod, round(Distance, digits = 4))
     output("")
-    print(round(Best, digits = 4), digits = 4)
+    print(round(Best, digits = 4), rownames = FALSE)
   }
 }
