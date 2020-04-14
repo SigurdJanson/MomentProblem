@@ -226,7 +226,8 @@ GetLaunchSpace.ByMomentPdf <- function( Pdf, Count,
   
   # Harmonic: distribute n starting points evenly across the space
   if (Method == "Harmonic") {
-    LaunchPad <- GetHarmonicPoints(NDim, Count)
+    LaunchPad <- GetHarmonicPoints(NDim, Count, 
+                                   Seed = 0.5 + runif(1, -0.1, 0.1))
     # Scale points to 'ParamSpace'
     Range <- Pdf$ParamSpace["to", ] - Pdf$ParamSpace["from", ]
     LaunchPad <- LaunchPad * Range
