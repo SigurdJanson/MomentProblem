@@ -602,3 +602,25 @@ plot.ByMomentPdf <- function( Pdf, ParamSet, X = NULL, Type = c(d, p, q),
     lines(X, Y, col = "cyan")
   }
 }
+
+
+
+hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
+  if(UsePdf && is.null(Pdf$DistaFu)) 
+    stop("Pdf has not been evaluated.")
+  if(!UsePdf && is.null(Pdf$DistaMo)) 
+    stop("Moments have not been evaluated.")
+  
+  if(UsePdf) {
+    ID <- unlist(lapply(Pdf$DistaFu, `[`, "ID"))
+    Distance <- unlist(lapply(Pdf$DistaFu, `[`, "Delta"))
+    Data <- data.frame(ID, Distance)
+  } else {
+    Data <- data.frame(Distance = Pdf$DistaFu)
+  }
+  
+  p <- ggplot(data = Data, aes(x = Distance)) + 
+         geom_histogram()
+  print(p)
+  invisible(p)
+}
