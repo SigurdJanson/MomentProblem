@@ -292,7 +292,8 @@ SetLaunchSpace <- function( LaunchSpace ) {
 #'
 #' @author Jan Seifert
 #' @examples
-AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
+AddSolution <- function( Pdf, LaunchPoint, SoluParam, 
+                         DistaMo = NULL, Append = FALSE, ... ) {
   # PRECONDITIONS
   if(LaunchPoint < 1L) stop("Invalid launch point (must be > 0).")
   if(LaunchPoint != 1 && LaunchPoint > nrow(Pdf$LaunchSpace))
@@ -305,8 +306,8 @@ AddSolution <- function( Pdf, LaunchPoint, SoluParam, Add = FALSE, ... ) {
 
 #' AddSolution.ByMomentPdf
 #' @describeIn AddSolution
-AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, 
-                                      SoluParam, Append = FALSE ) {
+AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, SoluParam, 
+                                      DistaMo = NULL, Append = FALSE ) {
   # RESULT
   if (isFALSE(Append) ||
       is.null(Pdf$ParamSolved) || 
@@ -337,8 +338,14 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint,
   }
   #NOTE: At this point this class assumes that there is one distance
   # for each solution. If not, they cannot be referenced properly.
-  Pdf$DistaFu <- NULL # not valid anymore
-  Pdf$DistaMo <- NULL # not valid anymore
+  if (is.null(DistaMo) || 
+      length(Pdf$DistaMo)+1 != length(Pdf$ParamSolved)) {
+    Pdf$DistaFu <- NULL # not valid anymore
+    Pdf$DistaMo <- NULL # not valid anymore
+  } else {
+    Pdf$DistaMo <- c(Pdf$DistaMo, 
+                     list(list(ID = LaunchPoint, Delta = DistaMo)))
+  }
   return(Pdf)
 }
 
