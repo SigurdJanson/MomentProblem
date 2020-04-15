@@ -133,22 +133,21 @@ source("./R/FindPdf_Root.R")
 #' 'MinMax' must be 0. Genetic algorithms maximise and 'MinMax' = 1 is correct.
 #' @return The distance of the observed moments from the expected.
 .DeltaAllGLD <- function(L, A, MinMax = 0) {
-  lambda1 <- L[1] # for readibility only
-  lambda2 <- L[2] # for readibility only
-  lambda3 <- L[3] # for readibility only
-  if(A[3] != 0) 
-    lambda4 <- L[4] 
-  else
-    lambda4 <- L[3] # When symmetry: L3 = L4
-  v1 <- .v1f(lambda3, lambda4)
-  v2 <- .v2f(lambda3, lambda4)
-  v3 <- .v3f(lambda3, lambda4)
-  v4 <- .v4f(lambda3, lambda4)
+  L <- c(NA, NA, L)
+  #if(A[3] != 0) L[4] <- L[4] 
+  #else L[4] <- L[3] # When symmetry: L3 = L4
+  v1 <- .v1f(L[3], L[4])
+  v2 <- .v2f(L[3], L[4])
+  v3 <- .v3f(L[3], L[4])
+  v4 <- .v4f(L[3], L[4])
 
-  # based on eqn 27: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
-  Alpha2 <- (v2 - v1^2) / lambda2^2
-  # based on eqn 28: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
-  Alpha1 <- lambda1 - 1/lambda2 * ( (1/(lambda3+1)) - (1/(lambda4+1)) )
+  L[2] <- sqrt(v2 - v1^2) / sqrt(A[2]) # eqn. 13
+  L[1] <- A[1] + (1/(L[3]+1) - 1/(L[4]+1)) / L[2] # eqn 14
+  
+  # based on eqn 13: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
+  Alpha2 <- (v2 - v1^2) / L[2]^2
+  # based on eqn 14: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
+  Alpha1 <- L[1] - 1/L[2] * ( (1/(L[3]+1)) - (1/(L[4]+1)) )
 
   Delta1 <- abs(A[1] - Alpha1)
   Delta2 <- abs(A[2] - Alpha2)
@@ -158,7 +157,7 @@ source("./R/FindPdf_Root.R")
   else
     Delta4 <- Delta3 # When symmetry: L3 = L4
   
-  DeltaAll <- Delta1 + Delta2 + Delta3 + Delta4
+  DeltaAll <- sqrt(Delta1^2 + Delta2^2 + Delta3^2 + Delta4^2)
   if(is.na(DeltaAll) || is.nan(DeltaAll) || is.infinite(DeltaAll))
     DeltaAll <- 999999
   if(MinMax == 1)
@@ -298,8 +297,8 @@ source("./R/FindPdf_Root.R")
   
   # Genetic algorithm first: locate the general vicinity of the minimum
   # GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
-  #          A = TarMo, MinMax = 1, 
-  #          lower = Lower, 
+  #          A = TarMo, MinMax = 1,
+  #          lower = Lower,
   #          upper = Upper,
   #          popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
   #          monitor = FALSE)
@@ -315,17 +314,23 @@ source("./R/FindPdf_Root.R")
               lower = Lower, upper = Upper,
               fn = .DeltaAllGLD, A = TarMo,
               control = list(reltol = Tolerance, maxit = 50000) )
-  ###TODO: check if successful, first
-  if (r$convcode != 0) print(r$convcode)
-  Lambda[1] <- r$p1 
-  Lambda[2] <- r$p2 
-  Lambda[3] <- r$p3 
-  if(TarMo[3] == 0) # Symmetry: lambda3 = lambda4
-    Lambda[4] <- Lambda[3]
-  else
-    Lambda[4] <- r$p4
-  
-  return(Lambda)
+  if (r$convcode == 0) {
+    Lambda[3] <- r$p1 
+    #if(TarMo[3] == 0) # Symmetry: lambda3 = lambda4
+    #  Lambda[4] <- Lambda[3]
+    #else
+    Lambda[4] <- r$p2
+    #Lambda[2] <- r$p2 
+    Lambda[2] <- sqrt(.v2f(Lambda[3], Lambda[4]) - .v1f(Lambda[3], Lambda[4])^2) / 
+      sqrt(TarMo["Var"]) # eqn. 13
+    #Lambda[1] <- r$p1 
+    Lambda[1] <- TarMo["Mean"] + (1/(Lambda[3]+1) - 1/(Lambda[4]+1)) / Lambda[2] # eqn 14
+  } else {
+    #print(r$convcode)
+    Lambda <- rep(NA_integer_, 4)
+  }
+
+  return(list(Lambda = Lambda, Distance = r$value))
 }
 
 
@@ -333,8 +338,10 @@ source("./R/FindPdf_Root.R")
 #' New_ByMomentPdf.gld
 #' Constructor of class `gld`.
 #' @param TarMo Target moments, vector with the first four moments.
-#'
-#' @return
+#' @param TarFu Target function is a list with the name of the 
+#' desired density function as first entry and it's parameters as 
+#' named list as the second.
+#' @return An initialised object with S3 class `ByMomentPdf` and `gld`.
 #' @export
 #'
 #' @author Jan Seifert
@@ -344,14 +351,12 @@ New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
     stop("Generalised lambda approximation can only handle up to 4 moments.")
   this <- New_ByMomentPdf( TarMo, TarFu )
   
-  NDim <- ifelse(TarMo[3] == 0, 3, 4) # symmetrical distribution
-  
   this$Function   <- "gl"
   # Dimensions of the parameter space of the PDF
-  Dim1  <- c(-500,  500)   #-+500 is arbitrary
-  Dim2  <- c(0,     500)
+  #Dim1  <- c(-500,  500)   
+  #Dim2  <- c(0,     500) #-+500 is arbitrary
   Dim34 <- c(-0.25, 500) # -0.25 is the defined limit of the range of def.
-  this$ParamSpace <- matrix(data = c(Dim1, Dim2, Dim34, Dim34),
+  this$ParamSpace <- matrix(data = c(Dim34, Dim34),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
   
@@ -381,9 +386,9 @@ SolutionMoments.gld <- function(Pdf, Solution = 1) {
   v3 <- .v3f(Solution[3], Solution[4])
   v4 <- .v4f(Solution[3], Solution[4])
   
-  # based on eqn 27: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
+  # based on eqn 13: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
   Alpha[2] <- (v2 - v1^2) / Solution[2]^2
-  # based on eqn 28: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
+  # based on eqn 14: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
   Alpha[1] <- Solution[1] - 1/Solution[2] * 
     ( (1/(Solution[3]+1)) - (1/(Solution[4]+1)) )
   Alpha[3] <- .Alpha3(c(v1, v2, v3, v4))
@@ -400,14 +405,14 @@ FindPdf.gld <- function( Pdf, LaunchPoint, Append = FALSE ) {
   LP <- Pdf$LaunchSpace[LaunchPoint, ]
 
   # Get a resulting PDF
-  Lambda <- .FindPDF_GLD( Pdf$TarMo, LP, 
+  Result <- .FindPDF_GLD( Pdf$TarMo, LP, 
                           Lower = Pdf$ParamSpace["from"], 
                           Upper = Pdf$ParamSpace["to"], 
                           Pdf$Tolerance )
   
   # Determine distance to desired solution
-  Pdf <- AddSolution( Pdf, LaunchPoint, 
-                      SoluParam = Lambda, Append = Append )
+  Pdf <- AddSolution( Pdf, LaunchPoint, SoluParam = Result$Lambda, 
+                      DistaMo = Result$Distance, Append = Append )
   return(Pdf)
 }
 
