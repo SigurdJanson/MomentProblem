@@ -27,9 +27,11 @@ source("./R/Helper_FindPdf_Root.R")
 #'   the variance, etc. The length (i.e. the highest allowed moment) is
 #'   defined by each implementation of `ByMomentPdf`.}
 #'   \item{DistaFu}{Distance measure between approximated solution 
-#'   function and target function.}
+#'   function and target function. Matrix with first column `ID` to provide
+#'   a reference to the solution and `Delta` to contain the distance.}
 #'   \item{DistaMo}{Distance measure between approximated solution 
-#'   moments and target function.}
+#'   moments and target function. Matrix with first column `ID` to provide
+#'   a reference to the solution and `Delta` to contain the distance.}
 #'   \item{ParamSpace}{Range of definition that is allowed for 
 #'   parameters of the PDF. Numeric matrix with two coordinate 
 #'   vectors in the rows 'from' and 'to'. The number of columns 
@@ -343,8 +345,7 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, SoluParam,
     Pdf$DistaFu <- NULL # not valid anymore
     Pdf$DistaMo <- NULL # not valid anymore
   } else {
-    Pdf$DistaMo <- c(Pdf$DistaMo, 
-                     list(list(ID = LaunchPoint, Delta = DistaMo)))
+    Pdf$DistaMo <- rbind(Pdf$DistaMo, c(LaunchPoint, DistaMo))
   }
   return(Pdf)
 }
@@ -427,25 +428,25 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     x <- .plotrange.ByMomentpdf(Pdf)
     #
     Solutions <- lapply(Pdf$ParamSolved, `[[`, 2)
-    DResult <- list()
+    DResult <- NULL
     Pos <- 1
     for(s in Solutions) {
       # Check if parameters are valid
       if (any(unlist(s) < Pdf$ParamSpace["from",]) || 
           any(unlist(s) > Pdf$ParamSpace["to",])) {
-        DResult <- c(DResult, list(list(ID = Pdf$ParamSolved[[Pos]][[1]], 
-                                   Delta = NA)))
+        DResult <- rbind(DResult, c(Pdf$ParamSolved[[Pos]][[1]], NA))
       } else {
         # Compute distance
         SoluResult  <- dPdf(Pdf, x, as.list(s)) # get PDF(x)
         TarFuResult <- do.call( Pdf$TarFu[[1]], c(list(x = x), Pdf$TarFu[[2]]) )
         D <- jeffreys(TarFuResult, SoluResult, TRUE, "log2")
-        DResult <- c(DResult, list(list(ID = Pdf$ParamSolved[[Pos]][[1]], 
-                                   Delta = D)))
+        DResult <- rbind(DResult, c(Pdf$ParamSolved[[Pos]][[1]], D))
       }
       Pos <- Pos+1
     }
+    colnames(DResult) <- c("ID", "Delta")
     Pdf$DistaFu <- DResult
+    
   } else { # Use moments
     # if moments are not available, generate
     if(is.null(Pdf$Moments)) {
@@ -456,7 +457,7 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     }
     
     Moments <- lapply(Pdf$Moments, `[[`, 2)
-    DResult <- list()
+    DResult <- NULL
     Method <- 1 # i.e. "euclidean", see "?dist"
     Attrs <- list(Size = 2, Labels = "", Diag = FALSE, Upper = FALSE,
                   method = "euclidean", call = match.call(), class = "dist")
@@ -464,9 +465,11 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     for(m in Moments) {
       X <- rbind(Pdf$TarMo, m)
       D <- .Call(C_Cdist, X, Method, Attrs)
-      DResult <- c(DResult, list(ID = Pdf$Moments[ID][[1]], Delta = D))
+      DResult <- rbind(DResult, c(Pdf$Moments[ID][[1]], D))
       ID <- ID+1
     }
+    
+    colnames(DResult) <- c("ID", "Delta")
     Pdf$DistaMo <- DResult
   }
   return(Pdf)
@@ -497,25 +500,26 @@ BestSolution <- function(Pdf, ...) {
 BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   if(UsePdf) {
     if(is.null(Pdf$DistaFu)) Pdf <- EvaluatePdf(Pdf, UsePdf)
-    DistaXx <- Pdf$DistaFu
+    Distances <- Pdf$DistaFu
   } else {
     if(is.null(Pdf$DistaMo)) Pdf <- EvaluatePdf(Pdf, UsePdf)
-    DistaXx <- Pdf$DistaMo
+    Distances <- Pdf$DistaMo
   }
   
   # Get the index of the solutions with best results
-  Distances <- unlist(lapply(DistaXx, `[`, 2))
-  Best <- which(Distances == min(Distances, na.rm = TRUE))
+  #Distances <- unlist(lapply(DistaXx, `[`, 2))
+  Best <- which(Distances[, "Delta"] == min(Distances[, "Delta"], na.rm = TRUE))
   
   # Get all the parameter sets yielding best results
   BestParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
-  BestParamSets <- BestParamSets[Best]
+  BestParamSets <- BestParamSets[ Distances[Best, "ID"] ]
   UniBestParamSets <- unique(BestParamSets)
+  
   NBest <- length(UniBestParamSets)
-
-  if (length(UniBestParamSets) > 0) {
+  if (NBest > 0) {
     UniBestParamSets <- matrix(unlist(UniBestParamSets), 
                                nrow = NBest, byrow = TRUE)
+    #rownames(UniBestParamSets) <- TODO
     colnames(UniBestParamSets) <- paste0("Param", 1:ncol(UniBestParamSets))
   }
   
@@ -556,13 +560,13 @@ summary.ByMomentPdf <- function( object, ...) {
   if (!is.null(object$DistaFu)) {
     Best <- BestSolution(object, UsePdf = TRUE)
     DistanceMethod <- "Jeffreys Distance"
-    Distances <- unlist(lapply(object$DistaFu, `[`, 2))
+    Distances <- object$DistaFu[, "Delta"]
     Distance <- min(Distances, na.rm = TRUE)
   }
-  else if (!is.null(object$DistaFu)) {
+  else if (!is.null(object$DistaMo)) {
     Best <- BestSolution(object, UsePdf = FALSE)
     DistanceMethod <- "Euclidean Distance"
-    Distances <- unlist(lapply(object$DistaFu, `[`, 2))
+    Distances <- object$DistaMo[, "Delta"]
     Distance <- min(Distances, na.rm = TRUE)
   }
   else
@@ -648,14 +652,16 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     stop("Moments have not been evaluated.")
   
   if(UsePdf) {
-    ID <- unlist(lapply(Pdf$DistaFu, `[`, "ID"))
-    Distance <- unlist(lapply(Pdf$DistaFu, `[`, "Delta"))
-    Data <- data.frame(ID, Distance)
+    #ID <- Pdf$DistaFu[, "ID"]
+    #Distance <- Pdf$DistaFu[, "Delta"]
+    #Data <- data.frame(ID, Distance)
+    Data <- as.data.frame(Pdf$DistaFu)
   } else {
-    Data <- data.frame(Distance = Pdf$DistaFu)
+    #Data <- data.frame(Distance = Pdf$DistaFu)
+    Data <- as.data.frame(Pdf$DistaMo)
   }
   
-  p <- ggplot(data = Data, aes(x = Distance, na.rm = TRUE)) + 
+  p <- ggplot(data = Data, aes(x = Delta, na.rm = TRUE)) + 
          geom_histogram()
   print(p)
   invisible(p)
