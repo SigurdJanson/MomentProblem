@@ -26,38 +26,24 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
   TargetFunction <- list("dnorm", list(mean = 0, sd = 1))
   Pdf <- New_ByMomentPdf.gld(TarMo, TarFu = TargetFunction)
   if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 0")
-  Pdf <- GetLaunchSpace(Pdf, 400, "Harmonic")
+  Pdf <- GetLaunchSpace(Pdf, 1E5, "Harmonic")
 
   # Converge for each launch point
   for(LP in 1:nrow(Pdf$LaunchSpace)) {
     Pdf <- FindPdf( Pdf, LP, Append = TRUE )
+    if(LP %% 50 == 0) cat(".")
   }
 
   UsePdf <- TRUE
   Pdf  <- EvaluatePdf(Pdf, UsePdf = UsePdf)
   Best <- BestSolution(Pdf, UsePdf = UsePdf)
   
-  # probably provide histogram of distances across solutions
-  #if(Plot) {
-  if(!is.null(Pdf$DistaFu)) {
-    ID <- unlist(lapply(Pdf$DistaFu, `[`, "ID"))
-    Distance <- unlist(lapply(Pdf$DistaFu, `[`, "Delta"))
-    Data <- data.frame(ID, Distance)
-    print({
-      ggplot(data = Data, aes(x = Distance)) + 
-      geom_histogram() })
-  }
-  if(!is.null(Pdf$DistaMo)) {
-    Data <- data.frame(Distance = Pdf$DistaFu)
-    ggplot(data = Data, aes(x = Distance)) + 
-      geom_histogram()
-  }
-  #}#Plot
+  summary(Pdf)
+  Champion <- as.list(Best[1,])
+  names(Champion) <- paste0("lambda", 1:4)
+  plot(Pdf, Champion, 5, AddTarFu = TRUE)
+  hist(Pdf, UsePdf = TRUE)
   
-  # Present best solution(s)
-  #if(Plot) {
-  #TODO: plot target function and Pdf
-  #}#Plot
   return(Pdf)
 }
 
