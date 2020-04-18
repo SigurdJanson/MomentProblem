@@ -99,7 +99,7 @@ test_that("Density, distribution, quantile & random function", {
 
 
 
-## GET LAUNCH SPACE ----
+## LAUNCH SPACE ----
 test_that("GetLaunchSpace.default: Preconditions", {
   TargetMoments <- c(0, 1, 0, 3, 0, 15)
   Pdf <- New_ByMomentPdf.default(TargetMoments)
@@ -181,7 +181,7 @@ test_that("GetLaunchSpace.default: Result", {
 
 
 
-## METHODS ----
+## SOLUTIONS ----
 test_that("SolutionMoments", {
   succeed(message = "Tested via Gld class")
 })
@@ -240,6 +240,63 @@ test_that("FindPdf", {
 
 
 
-test_that("EvaluatePdf", {
-  fail(message = "TODO: test EvaluatePdf")
+test_that("EvaluatePdf / BestSolution", {
+  CalcMoments <- function(a, b) c((b+a)/2, (b-a)^2/12, 0, -6/5)
+  # Preconditions
+  a <- 0
+  b <- 1
+  # Uniform distribution (https://t1p.de/q14s)
+  TargetMoments <- CalcMoments(a, b)
+  Pdf <- New_ByMomentPdf.default( TargetMoments )
+  Pdf$Function <- "unif"
+  
+  # Evaluation using moments
+  # Make sure that they are in the wrong order to test proper index search
+  Pdf <- GetLaunchSpace( Pdf, Count = 4, Method = "Random" )
+  Pdf$ParamSolved <- list(list(3, c(0.1, 1.1)))
+  Pdf$ParamSolved <- c(Pdf$ParamSolved, list(list(1, c(-0.1, 1.1))))
+  Pdf <- AddSolution( Pdf, 4, c(0.1, 0.9), 4, Append = TRUE)
+  Pdf <- AddSolution( Pdf, 2, c(0, 1), 2, Append = TRUE)
+  expect_length(Pdf$ParamSolved, 4L)# added this test because it was wrong once
+  
+  expect_null(Pdf$DistaMo) # test for side effect
+  # Add moments because there is no built-in way to get them
+  Pdf$Moments <- list(list(1, CalcMoments(-0.1, 1.1)),
+                      list(2, CalcMoments(0, 1)),
+                      list(3, CalcMoments(0.1, 1.1)),
+                      list(4, CalcMoments(0.1, 0.9)))
+  # Evaluate
+  expect_silent(Pdf <- EvaluatePdf(Pdf, FALSE))
+  expect_identical(nrow(Pdf$DistaMo), 4L)
+  expect_identical(ncol(Pdf$DistaMo), 2L)
+  expect_equal(Pdf$DistaMo[, "ID"], c(1:4))
+  expect_equivalent(Pdf$DistaMo[2, "Delta"], 0)
+  expect_gt(Pdf$DistaMo[1, "Delta"], Pdf$DistaMo[2, "Delta"])
+  expect_gt(Pdf$DistaMo[3, "Delta"], Pdf$DistaMo[2, "Delta"])
+  expect_gt(Pdf$DistaMo[4, "Delta"], Pdf$DistaMo[2, "Delta"])
+  
+  Best <- matrix(c(0, 1), nrow = 1, 
+                 dimnames = list(NULL, paste0("Param", 1:2)))
+  expect_equal(BestSolution(Pdf), Best)
+  
+  # Try list of moments in different order: result must be the same
+  Pdf$Moments <- list(list(1, CalcMoments(-0.1, 1.1)),
+                      list(3, CalcMoments(0.1, 1.1)),
+                      list(2, CalcMoments(0, 1)),
+                      list(4, CalcMoments(0.1, 0.9)))
+  expect_equal(BestSolution(Pdf), Best)
+  
+  
+  # Evaluation using distribution
+  Pdf$Function <- "unif"
+  Pdf$TarFu    <- list("dunif", c(0, 1))
+  expect_silent(Pdf <- EvaluatePdf(Pdf, TRUE))
+
+  Index <- which(Pdf$DistaFu[, "ID"] == 2)
+  expect_equivalent(Pdf$DistaFu[Index, "Delta"], 0)
+  expect_gt(Pdf$DistaMo[1, "Delta"], Pdf$DistaFu[Index, "Delta"])
+  expect_gt(Pdf$DistaMo[3, "Delta"], Pdf$DistaFu[Index, "Delta"])
+  expect_gt(Pdf$DistaMo[4, "Delta"], Pdf$DistaFu[Index, "Delta"])
+  
+  expect_equal(BestSolution(Pdf, TRUE), Best)
 })

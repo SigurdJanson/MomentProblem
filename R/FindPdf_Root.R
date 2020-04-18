@@ -316,15 +316,14 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, SoluParam,
       length(Pdf$ParamSolved) < 1) {
     Pdf$ParamSolved <- list(list(LaunchPoint, SoluParam))
   } else {
-    # Check if solution for this launch point already exists
+    # Check if solution for this launch point already exists ...
     LPs <- unlist( lapply(Pdf$ParamSolved, `[[`, 1) )
     Pos <- which(LPs == LaunchPoint)
     
-    if (length(Pos) != 0) {
-      # Replace if it does
+    if (length(Pos) != 0) { # ... and replace if it does
       Pdf$ParamSolved[[Pos]] <- list(LaunchPoint, SoluParam)
     } else {
-      # Find position and insert it at the right position
+      # If not, find position and insert it at the right position
       Len <- length(Pdf$ParamSolved)
       if (LaunchPoint < LPs[1]) {
         Pdf$ParamSolved <- c(list(list(LaunchPoint, SoluParam)), Pdf$ParamSolved)
@@ -349,6 +348,7 @@ AddSolution.ByMomentPdf <-  function( Pdf, LaunchPoint, SoluParam,
   }
   return(Pdf)
 }
+
 
 
 #' FindPdf
@@ -458,14 +458,11 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     
     Moments <- lapply(Pdf$Moments, `[[`, 2)
     DResult <- NULL
-    Method <- 1 # i.e. "euclidean", see "?dist"
-    Attrs <- list(Size = 2, Labels = "", Diag = FALSE, Upper = FALSE,
-                  method = "euclidean", call = match.call(), class = "dist")
     ID <- 1
-    for(m in Moments) {
+    for(m in Moments) { # TODO: this might be possible without loop (dist accepts matrices)
       X <- rbind(Pdf$TarMo, m)
-      D <- .Call(C_Cdist, X, Method, Attrs)
-      DResult <- rbind(DResult, c(Pdf$Moments[ID][[1]], D))
+      D <- as.numeric(dist(X))
+      DResult <- rbind(DResult, c(Pdf$Moments[[ID]][[1]], D))
       ID <- ID+1
     }
     
@@ -474,7 +471,6 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   }
   return(Pdf)
 }
-
 
 
 
@@ -511,19 +507,21 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   Best <- which(Distances[, "Delta"] == min(Distances[, "Delta"], na.rm = TRUE))
   
   # Get all the parameter sets yielding best results
-  BestParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
-  BestParamSets <- BestParamSets[ Distances[Best, "ID"] ]
-  UniBestParamSets <- unique(BestParamSets)
+  ParamSetIndices <- lapply(Pdf$ParamSolved, `[[`, 1)
+  BestParamSetIndices <- which(ParamSetIndices == Distances[Best, "ID"])
+  ParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
+  BestParamSets <- ParamSets[ BestParamSetIndices ]
+  UniqueBestParamSets <- unique(BestParamSets)
   
-  NBest <- length(UniBestParamSets)
+  NBest <- length(UniqueBestParamSets)
   if (NBest > 0) {
-    UniBestParamSets <- matrix(unlist(UniBestParamSets), 
+    UniqueBestParamSets <- matrix(unlist(UniqueBestParamSets), 
                                nrow = NBest, byrow = TRUE)
     #rownames(UniBestParamSets) <- TODO
-    colnames(UniBestParamSets) <- paste0("Param", 1:ncol(UniBestParamSets))
+    colnames(UniqueBestParamSets) <- paste0("Param", 1:ncol(UniqueBestParamSets))
   }
   
-  return(UniBestParamSets)
+  return(UniqueBestParamSets)
 }
 
 
