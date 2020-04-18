@@ -1,5 +1,5 @@
 library(gld)
-library(GA)
+#library(GA)
 library(optimx)
 source("./R/FindPdf_Root.R")
 
@@ -10,9 +10,6 @@ source("./R/FindPdf_Root.R")
 #' @param L3 GLD parameter lambda3
 #' @param L4 GLD parameter lambda4
 .v1f <- function( L3, L4 ) {
-  # if(is.numeric(c(L3, L4)))
-  #   if(L3 == 0 && L4 == 0) 
-  #     return(0) # TODO: verify this line
   s1 <- 1 / L3 / (L3+1)
   s2 <- 1 / L4 / (L4+1)
   return(s1-s2)
@@ -36,7 +33,6 @@ source("./R/FindPdf_Root.R")
 #' @param L3 GLD parameter lambda3
 #' @param L4 GLD parameter lambda4
 .v3f <- function( L3, L4 ) {
-  # if(L3 == 0 && L4 == 0) return(0) # TODO: verify this line
   s1 <- 1 / L3^3 / (3*L3+1)
   s2 <- 1 / L4^3 / (3*L4+1)
   s3 <- 3 / L3^2 / L4 * suppressWarnings(beta(2*L3+1, L4+1))
@@ -58,6 +54,23 @@ source("./R/FindPdf_Root.R")
   return(s1+s2+s3-s4-s5)
 }
 
+
+
+#' .Alpha1
+#' Helper function
+.Alpha1 <- function( Lambda ) { 
+  
+  alpha1 <- Lambda[1] - 1/Lambda[2] * ( (1/(Lambda[3]+1)) - (1/(Lambda[4]+1)) )
+  return(alpha1)
+}
+
+#' .Alpha2
+#' Helper function
+.Alpha2 <- function( v1, v2, Lambda ) { 
+  # based on eqn 13: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
+  alpha2 <- (v2 - v1^2) / Lambda[2]^2
+  return(alpha2)
+}
 
 
 #' .Alpha3
@@ -88,6 +101,8 @@ source("./R/FindPdf_Root.R")
   return(alpha4)
 }
 
+
+# OBJECTIVE FUNCTIONS ----
 
 #' .Delta_GLD
 #' Helper function to compute the distance from the expected values
@@ -144,10 +159,8 @@ source("./R/FindPdf_Root.R")
   L[2] <- sqrt(v2 - v1^2) / sqrt(A[2]) # eqn. 13
   L[1] <- A[1] + (1/(L[3]+1) - 1/(L[4]+1)) / L[2] # eqn 14
   
-  # based on eqn 13: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
-  Alpha2 <- (v2 - v1^2) / L[2]^2
-  # based on eqn 14: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
-  Alpha1 <- L[1] - 1/L[2] * ( (1/(L[3]+1)) - (1/(L[4]+1)) )
+  Alpha2 <- .Alpha2(v1, v2, L) #(v2 - v1^2) / L[2]^2
+  Alpha1 <- .Alpha2(L) # L[1] - 1/L[2] * ( (1/(L[3]+1)) - (1/(L[4]+1)) )
 
   Delta1 <- abs(A[1] - Alpha1)
   Delta2 <- abs(A[2] - Alpha2)
@@ -166,6 +179,7 @@ source("./R/FindPdf_Root.R")
 }
 
 
+# OPTIMISATION ----
 
 #' .GLDTypeConstraints
 #' The ideas is to select better init values for optimisation if 
@@ -258,20 +272,18 @@ source("./R/FindPdf_Root.R")
     r <- optimx(GA@solution[1,], method = c("Nelder-Mead"), 
                 fn = .DeltaA3A4GLD, A3 = Moments["Skew"], A4 = Moments["Kurt"], 
                control = list(reltol = Tolerance*100, maxit = 50000) )
-    ###TODO: check if successful, first
-    Lambda[3] <- r$x1 #r$par[1]
-    Lambda[4] <- r$x2 #r$par[2]
+    if (r$convcode == 0) {
+      Lambda[3] <- r$x1 #r$par[1]
+      Lambda[4] <- r$x2 #r$par[2]
+      v1 <- .v1f(Lambda[3], Lambda[4])
+      v2 <- .v2f(Lambda[3], Lambda[4])
+      Lambda[2] <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
+      Lambda[1] <- Moments[1] + 1/Lambda[2] * ( (1/(Lambda[3]+1)) + (1/(Lambda[4]+1)) )
+    } else {
+      Lambda <- rep(NA_integer_, 4)
+    }
   }
-  
-  v1 <- .v1f(Lambda[3], Lambda[4])
-  v2 <- .v2f(Lambda[3], Lambda[4])
-  
-  # eqn 27
-  Lambda[2] <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
-  # eqn 28
-  Lambda[1] <- Moments[1] + 1/Lambda[2] * ( (1/(Lambda[3]+1)) + (1/(Lambda[4]+1)) )
-  
-  #print(Lambda)
+
   return(Lambda)
 }
 
@@ -316,17 +328,11 @@ source("./R/FindPdf_Root.R")
               control = list(reltol = Tolerance, maxit = 50000) )
   if (r$convcode == 0) {
     Lambda[3] <- r$p1 
-    #if(TarMo[3] == 0) # Symmetry: lambda3 = lambda4
-    #  Lambda[4] <- Lambda[3]
-    #else
     Lambda[4] <- r$p2
-    #Lambda[2] <- r$p2 
     Lambda[2] <- sqrt(.v2f(Lambda[3], Lambda[4]) - .v1f(Lambda[3], Lambda[4])^2) / 
       sqrt(TarMo["Var"]) # eqn. 13
-    #Lambda[1] <- r$p1 
     Lambda[1] <- TarMo["Mean"] + (1/(Lambda[3]+1) - 1/(Lambda[4]+1)) / Lambda[2] # eqn 14
   } else {
-    #print(r$convcode)
     Lambda <- rep(NA_integer_, 4)
   }
 
@@ -334,6 +340,7 @@ source("./R/FindPdf_Root.R")
 }
 
 
+# CLASS ----
 
 #' New_ByMomentPdf.gld
 #' Constructor of class `gld`.
@@ -353,15 +360,11 @@ New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
   
   this$Function   <- "gl"
   # Dimensions of the parameter space of the PDF
-  #Dim1  <- c(-500,  500)   
-  #Dim2  <- c(0,     500) #-+500 is arbitrary
-  Dim34 <- c(-0.25, 500) # -0.25 is the defined limit of the range of def.
+  # -+500 is arbitrary; -0.25 is the defined limit of the range of def.
+  Dim34 <- c(-0.25, 500) # 
   this$ParamSpace <- matrix(data = c(Dim34, Dim34),
                             nrow = 2, byrow = FALSE,
                             dimnames = list(c("from", "to"), NULL))
-  
-  # Starting points for approximation algorithms
-  #this$LaunchSpace  <- NULL
   
   class(this) <- append(class(this), "gld")
   return(this)
@@ -386,11 +389,8 @@ SolutionMoments.gld <- function(Pdf, Solution = 1) {
   v3 <- .v3f(Solution[3], Solution[4])
   v4 <- .v4f(Solution[3], Solution[4])
   
-  # based on eqn 13: lambda2 <- sqrt(v2 - v1^2) / sqrt(Moments[2]) 
-  Alpha[2] <- (v2 - v1^2) / Solution[2]^2
-  # based on eqn 14: lambda1 <- Moments[1] + 1/lambda2 * ( (1/(lambda3+1)) + (1/(lambda4+1)) )
-  Alpha[1] <- Solution[1] - 1/Solution[2] * 
-    ( (1/(Solution[3]+1)) - (1/(Solution[4]+1)) )
+  Alpha[2] <- .Alpha2(v1, v2, Solution)
+  Alpha[1] <- .Alpha1(Solution)
   Alpha[3] <- .Alpha3(c(v1, v2, v3, v4))
   Alpha[4] <- .Alpha4(c(v1, v2, v3, v4))
 
