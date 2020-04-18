@@ -432,7 +432,8 @@ EvaluatePdf.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     Pos <- 1
     for(s in Solutions) {
       # Check if parameters are valid
-      if (any(unlist(s) < Pdf$ParamSpace["from",]) || 
+      if (any(is.na(unlist(s))) ||
+          any(unlist(s) < Pdf$ParamSpace["from",]) || 
           any(unlist(s) > Pdf$ParamSpace["to",])) {
         DResult <- rbind(DResult, c(Pdf$ParamSolved[[Pos]][[1]], NA))
       } else {
