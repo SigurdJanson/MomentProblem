@@ -26,12 +26,13 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
   TargetFunction <- list("dnorm", list(mean = 0, sd = 1))
   Pdf <- New_ByMomentPdf.gld(TarMo, TarFu = TargetFunction)
   if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 0")
-  Pdf <- GetLaunchSpace(Pdf, 1E5, "Harmonic")
+  Pdf <- GetLaunchSpace(Pdf, 1E4, "Harmonic")
 
   # Converge for each launch point
   for(LP in 1:nrow(Pdf$LaunchSpace)) {
     Pdf <- FindPdf( Pdf, LP, Append = TRUE )
-    if(LP %% 50 == 0) cat(".")
+    if(LP %% 1000 == 0) cat("o")
+    else if(LP %% 100 == 0) cat(".")
   }
 
   UsePdf <- TRUE
