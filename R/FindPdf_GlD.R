@@ -1,7 +1,8 @@
 library(gld)
-#library(GA)
-library(optimx)
+library(GA)
+#library(optimx)
 source("./R/FindPdf_Root.R")
+source("./R/nmkb.R")
 
 
 
@@ -160,7 +161,7 @@ source("./R/FindPdf_Root.R")
   L[1] <- A[1] + (1/(L[3]+1) - 1/(L[4]+1)) / L[2] # eqn 14
   
   Alpha2 <- .Alpha2(v1, v2, L) #(v2 - v1^2) / L[2]^2
-  Alpha1 <- .Alpha2(L) # L[1] - 1/L[2] * ( (1/(L[3]+1)) - (1/(L[4]+1)) )
+  Alpha1 <- .Alpha1(L) # L[1] - 1/L[2] * ( (1/(L[3]+1)) - (1/(L[4]+1)) )
 
   Delta1 <- abs(A[1] - Alpha1)
   Delta2 <- abs(A[2] - Alpha2)
@@ -303,37 +304,44 @@ source("./R/FindPdf_Root.R")
 #' @author Jan Seifert
 #' @examples
 .FindPDF_GLD <- function( TarMo, InitLambda, Lower, Upper,
-                          Tolerance = sqrt(.Machine$double.eps) ) {
+                          Tolerance = 1E-6) { #sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
-  names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
+  #names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
+  NelderMeadArgs <- list(method = "Nelder-Mead", 
+                         poptim = 0.05,
+                         pressel = 0.5,
+                         control = list(reltol = Tolerance, maxit = 100))
   
   # Genetic algorithm first: locate the general vicinity of the minimum
-  # GA <- ga(type = "real-valued", fitness = function(x, ...) .DeltaAllGLD(x, ...),
-  #          A = TarMo, MinMax = 1,
-  #          lower = Lower,
-  #          upper = Upper,
-  #          popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
-  #          monitor = FALSE)
-  
-  #TODO: constrOptim
-  #Box-constraint, optimum on the boundary
-  # constrOptim(c(-1.2,0.9), fr, grr, ui = rbind(c(-1,0), c(0,-1)), ci = c(-1,-1))
-  # r <- constrOptim(theta = InitLambda, method = c("Nelder-Mead"), 
-  #             lower = Lower, upper = Upper,
-  #             f = .DeltaAllGLD, A = TarMo, 
-  #             control = list(reltol = Tolerance, maxit = 50000) )
-  r <- optimx(InitLambda, method = c("Nelder-Mead"), #GA@solution[1,] # L-BFGS-B
-              lower = Lower, upper = Upper,
-              fn = .DeltaAllGLD, A = TarMo,
-              control = list(reltol = Tolerance, maxit = 50000) )
-  if (r$convcode == 0) {
-    Lambda[3] <- r$p1 
-    Lambda[4] <- r$p2
-    Lambda[2] <- sqrt(.v2f(Lambda[3], Lambda[4]) - .v1f(Lambda[3], Lambda[4])^2) / 
-      sqrt(TarMo["Var"]) # eqn. 13
-    Lambda[1] <- TarMo["Mean"] + (1/(Lambda[3]+1) - 1/(Lambda[4]+1)) / Lambda[2] # eqn 14
+  GA <- ga(type = "real-valued",
+           fitness = function(x, ...) .DeltaAllGLD(x, ...), A = TarMo, MinMax = 1,
+           suggestions = rbind(InitLambda),
+           lower = Lower, upper = Upper,
+           popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
+           #optim = TRUE, optimArgs = NelderMeadArgs,
+           monitor = NULL)
+
+  if (length(GA@solution[1,]) == length(InitLambda) ||
+      all(GA@solution[1,] >= Lower) ||
+      all(GA@solution[1,] <= Upper)) {
+
+    r <- nmkb(GA@solution[1,], fn = .DeltaAllGLD, A = TarMo, 
+                  lower = Lower, upper = Upper, 
+                  control = list(tol = 9e6, maxfeval = 5E5, trace = TRUE))
+    
+    if (r$convergence == 0) {
+      Lambda[3] <- r$par[1]
+      Lambda[4] <- r$par[2]
+      Lambda[2] <- sqrt(.v2f(Lambda[3], Lambda[4]) - .v1f(Lambda[3], Lambda[4])^2) /
+        sqrt(TarMo[2]) 
+      Lambda[1] <- TarMo[1] + (1/(Lambda[3]+1) - 1/(Lambda[4]+1)) / Lambda[2] 
+    } else {
+      Lambda <- rep(NA_integer_, 4)
+      r$value <- NA
+    } 
   } else {
     Lambda <- rep(NA_integer_, 4)
+    r$value <- NA
   }
 
   return(list(Lambda = Lambda, Distance = r$value))
@@ -362,13 +370,13 @@ New_ByMomentPdf.gld <- function( TarMo, TarFu = NULL ) {
   # Dimensions of the parameter space of the PDF
   # -+500 is arbitrary; -0.25 is the defined limit of the range of def.
   Dim34 <- c(-0.25, 500) # 
-  this$ParamSpace <- matrix(data = c(Dim34, Dim34),
-                            nrow = 2, byrow = FALSE,
+  this$ParamSpace <- matrix(data = c(Dim34, Dim34), nrow = 2, 
                             dimnames = list(c("from", "to"), NULL))
   
   class(this) <- append(class(this), "gld")
   return(this)
 }
+
 
 
 SolutionMoments.gld <- function(Pdf, Solution = 1) {
@@ -406,8 +414,8 @@ FindPdf.gld <- function( Pdf, LaunchPoint, Append = FALSE ) {
 
   # Get a resulting PDF
   Result <- .FindPDF_GLD( Pdf$TarMo, LP, 
-                          Lower = Pdf$ParamSpace["from"], 
-                          Upper = Pdf$ParamSpace["to"], 
+                          Lower = Pdf$ParamSpace["from",], 
+                          Upper = Pdf$ParamSpace["to",], 
                           Pdf$Tolerance )
   
   # Determine distance to desired solution
