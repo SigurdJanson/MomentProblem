@@ -2,7 +2,7 @@ library(gld)
 library(GA)
 #library(optimx)
 source("./R/FindPdf_Root.R")
-source("./R/nmkb.R")
+source("./R/nmkb.rcpp.R")
 
 
 
