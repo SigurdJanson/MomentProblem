@@ -57,31 +57,85 @@ test_that("ginv", {
 })
 
 
-
-test_that("nmkb vs nmkbcpp", {
-  nmkbcpp <- nmkb
-  # get original nmkb
-  setwd("..")
-  source("./R/nmkb.R")
-  setwd("./test")
-  
+test_that("Preconditions of nmkbcpp", {
   rosbkext <- function(x) {
-  # Extended Rosenbrock function
     n <- length(x)
     sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
-    }
-
+  }
+  
   np <- 10
   set.seed(123)
   p0 <- rnorm(np)
+  p0[p0 >= +2] <- +2 - 1E-8
+  p0[p0 <= -2] <- -2 + 1E-8
+  
+  badindex <- sample.int(np, 1)
+  p0[badindex] <- -2
+  expect_error(nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2), 
+               "Starting vector 'par' must lie [*]strictly[*] between lower and upper bounds")
+  p0[badindex] <- -2 + .Machine$double.eps
+  expect_silent(nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2))
+})
+
+
+
+test_that("Rosenbrock: nmkb vs Rcpp function 'nmkb'", {
+  rosbkext <- function(x) {
+    n <- length(x)
+    sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
+  }
+  
+  # get original nmkb
+  setwd("..")
+  source("./R/nmkb.rcpp.R")
+  nmkbcpp <- nmkb
+  source("./R/nmkb.R")
+  setwd("./test")
+  
+  np <- 10
+  set.seed(123)
+  p0 <- rnorm(np)
+  p0[sample.int(np, 1)]
+  p0[p0 > +2] <- +2 - 1E-8
+  p0[p0 < -2] <- -2 + 1E-8
   e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
-  o <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
+  o <- nmkbcpp(fn = rosbkext, par = p0, lower = -2, upper = 2)
   expect_identical(o, e)
   
   ctrl <- list(maxfeval = 50000)
-  set.seed(123)
   p0 <- rnorm(np)
+  p0[p0 > +2] <- +2 - 1E-8
+  p0[p0 < -2] <- -2 + 1E-8
+  set.seed(123)
   e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
-  o <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
+  set.seed(123)
+  o <- nmkbcpp(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
   expect_identical(o, e)
 })
+
+
+
+
+test_that("non-smooth problem: nmkb vs nmkbcpp", {
+  hald <- function(x) {
+    #Hald J & Madsen K (1981), Combined LP and quasi-Newton methods 
+    #for minimax optimization, Mathematical Programming, 20, p.42-62.
+    i <- 1:21
+    t <- -1 + (i - 1)/10
+    f <- (x[1] + x[2] * t) / ( 1 + x[3]*t + x[4]*t^2 + x[5]*t^3) - exp(t)
+    max(abs(f))
+  }
+  
+  # get original nmkb
+  setwd("..")
+  source("./R/nmkb.rcpp.R")
+  nmkbcpp <- nmkb
+  source("./R/nmkb.R")
+  setwd("./test")
+  
+  p0 <- runif(5, c(0,0,0,0,-2) - 1E-7, 4 - 1E-7)
+  o <- nmkbcpp(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
+  e <- nmkb(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
+  expect_identical(o, e)
+})
+
