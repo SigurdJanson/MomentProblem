@@ -192,6 +192,9 @@ SolutionMoments <- function(Pdf, ...) {
 #'
 #' @return A class after adding the optimisation solution. 
 #' The classes of `Pdf` are preserved.
+#' @details Using several starting parameters is some kind of a brute 
+#' force method to get a global optimimum but - of course - it cannot 
+#' guarantee that a global solution.
 #' @export
 #'
 #' @author Jan Seifert
@@ -661,9 +664,9 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     stop("Moments have not been evaluated.")
   
   if(UsePdf) {
-    Data <- as.data.frame(Pdf$DistaFu)
+    Data <- as.data.frame(Pdf$DistaFu[!is.na(Pdf$DistaFu[, "Delta"]), ])
   } else {
-    Data <- as.data.frame(Pdf$DistaMo)
+    Data <- as.data.frame(Pdf$DistaMo[!is.na(Pdf$DistaMo[, "Delta"]), ])
   }
   
   p <- ggplot(data = Data, aes(x = Delta, na.rm = TRUE)) + 
@@ -672,4 +675,4 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   invisible(p)
 }
 
-
+#summary(Pdf)
