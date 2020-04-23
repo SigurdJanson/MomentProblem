@@ -3,6 +3,7 @@ source("./R/nmkb.rcpp.R")
 setwd("./test")
 
 
+
 test_that("g", {
   # original function from dfoptim
   g <- function(x) {
@@ -13,20 +14,63 @@ test_that("g", {
     gx
   }
   
-  for(x in 1:500) {
+  # These are the cases that should happen
+  for(x in 1:1000) {
     c1 <- c(TRUE,  TRUE,  FALSE, FALSE, FALSE, FALSE)
     c3 <- c(FALSE, FALSE, TRUE,  TRUE,  FALSE, FALSE)
     c4 <- c(FALSE, FALSE, FALSE, FALSE, TRUE,  TRUE)
-    lower <- c( 0.0,   2,   4,   8, -100, -200)
+    lower <- c(0.0,   2,   4,   8, -100, -200)
     input <- runif(length(lower), 0, 100) + lower
     upper <- runif(length(lower), 0, 100) + input
-    lower[c4] <- rep(+Inf, length(lower[c4]))
-    upper[c3] <- rep(-Inf, length(upper[c3]))
+    lower[c4] <- rep(-Inf, length(lower[c4]))
+    upper[c3] <- rep(+Inf, length(upper[c3]))
     
     e <- suppressWarnings( g(input) )
     o <- gcpp(input, c1, c3, c4, lower, upper)
-    expect_equal(o, e)
+    expect_identical(o, e)
   }
+  
+  # Edge cases
+  c1 <- rep(TRUE, 2)
+  c3 <- rep(FALSE, 2)
+  c4 <- rep(FALSE, 2)
+  lower <- rep(-2, 2)
+  upper <- rep( 5, 2)
+  input <- lower + .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
+  
+  input <- upper - .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
+  
+  # 
+  c1 <- rep(FALSE, 2)
+  c3 <- rep(TRUE, 2)
+  input <- lower + .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
+  
+  input <- upper - .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
+  
+  # 
+  c3 <- rep(FALSE, 2)
+  c4 <- rep(TRUE, 2)
+  input <- lower + .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
+  
+  input <- upper - .Machine$double.eps
+  e <- suppressWarnings( g(input) )
+  o <- gcpp(input, c1, c3, c4, lower, upper)
+  expect_identical(o, e)
 })
 
 
@@ -52,7 +96,8 @@ test_that("ginv", {
     
     e <- suppressWarnings( ginv(input) )
     o <- ginvcpp(input, c1, c3, c4, lower, upper)
-    expect_equal(o, e)
+    expect_identical(o, e)
+    if(any(is.nan(e))) expect_identical(o[is.nan(e)], NaN)
   }
 })
 
@@ -95,7 +140,6 @@ test_that("Rosenbrock: nmkb vs Rcpp function 'nmkb'", {
   np <- 10
   set.seed(123)
   p0 <- rnorm(np)
-  p0[sample.int(np, 1)]
   p0[p0 > +2] <- +2 - 1E-8
   p0[p0 < -2] <- -2 + 1E-8
   e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
@@ -133,9 +177,9 @@ test_that("non-smooth problem: nmkb vs nmkbcpp", {
   source("./R/nmkb.R")
   setwd("./test")
   
-  p0 <- runif(5, c(0,0,0,0,-2) - 1E-7, 4 - 1E-7)
-  o <- nmkbcpp(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
+  p0 <- runif(5, c(0,0,0,0,-2) + 1E-7, 4 - 1E-7)
   e <- nmkb(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
+  o <- nmkbcpp(fn=hald, par=p0, lower=c(0,0,0,0,-2), upper=4)
   expect_identical(o, e)
 })
 
