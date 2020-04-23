@@ -504,12 +504,11 @@ BestSolution.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   }
   
   # Get the index of the solutions with best results
-  #Distances <- unlist(lapply(DistaXx, `[`, 2))
   Best <- which(Distances[, "Delta"] == min(Distances[, "Delta"], na.rm = TRUE))
   
   # Get all the parameter sets yielding best results
   ParamSetIndices <- lapply(Pdf$ParamSolved, `[[`, 1)
-  BestParamSetIndices <- which(ParamSetIndices == Distances[Best, "ID"])
+  BestParamSetIndices <- which(ParamSetIndices %in% Distances[Best, "ID"])
   ParamSets <- lapply(Pdf$ParamSolved, `[[`, 2)
   BestParamSets <- ParamSets[ BestParamSetIndices ]
   UniqueBestParamSets <- unique(BestParamSets)
@@ -567,14 +566,25 @@ summary.ByMomentPdf <- function( object, ...) {
     DistanceMethod <- "Euclidean Distance"
     Distances <- object$DistaMo[, "Delta"]
     Distance <- min(Distances, na.rm = TRUE)
+  } else {
+    output("Solutions have not been evaluated")
+    Best <- NULL
   }
-  else
-    output("No solutions available")
+  
+  # get unique solutions
+  if(!is.null(object$ParamSolved)) {
+    ParamSets <- lapply(object$ParamSolved, `[[`, 2)
+    ParamSets <- lapply(ParamSets, round, digits = 6)
+    UniqueSolutions <- length(unique(ParamSets))
+  } else {
+    UniqueSolutions <- NA
+  }
   
   if (!is.null(nrow(Best))) {
     cat("  ", nrow(Best), "solutions with best characteristics\n")
     output(DistanceMethod, round(Distance, digits = 4))
-    output("")
+    output("Failed cycles", sum(is.na(Distances)))
+    output("Unique solutions", UniqueSolutions)
     print(round(Best, digits = 4), rownames = FALSE)
   }
 }
@@ -651,12 +661,8 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     stop("Moments have not been evaluated.")
   
   if(UsePdf) {
-    #ID <- Pdf$DistaFu[, "ID"]
-    #Distance <- Pdf$DistaFu[, "Delta"]
-    #Data <- data.frame(ID, Distance)
     Data <- as.data.frame(Pdf$DistaFu)
   } else {
-    #Data <- data.frame(Distance = Pdf$DistaFu)
     Data <- as.data.frame(Pdf$DistaMo)
   }
   
@@ -665,3 +671,5 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
   print(p)
   invisible(p)
 }
+
+
