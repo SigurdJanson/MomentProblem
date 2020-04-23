@@ -2,7 +2,7 @@ library(gld)
 library(GA)
 #library(optimx)
 source("./R/FindPdf_Root.R")
-source("./R/nmkb.rcpp.R")
+source("./R/nmkb.R")
 
 
 
@@ -292,42 +292,55 @@ source("./R/nmkb.rcpp.R")
 #' .FindPDF_GLD
 #'
 #' @param TarMo Target moments, vector with the first four moments.
+#' @param InitLambda Starting point
+#' @param Lower,Upper Lower and upper bounds on the parameters. A 
+#' vector of the same length as the parameters.
+#' @param Rigour How to enhance the 
 #' @param Tolerance numeric ≥ 0. Differences smaller than tolerance 
 #' are not reported. The default value is close to 1.5e-8.
 #' 
 #' @details Moments are µ (mean), $\sigma$ (standard deviation), 
 #' skewness and kurtosis.
-#'
+#' If `Rigour` is `"Genetic"` then the search starts with a genetic 
+#' algorithm that is known to provide better coverage. After that a 
+#' Nelder-Mead optimisation completes the optimisation using the result
+#' of the genetic algorithm as starting point.
+#' Other values of `Rigour` use a Nelder-Mead optimisation.
 #' @return
 #' @export
 #'
 #' @author Jan Seifert
 #' @examples
 .FindPDF_GLD <- function( TarMo, InitLambda, Lower, Upper,
-                          Tolerance = 1E-6) { #sqrt(.Machine$double.eps) ) {
+                          Tolerance = 1E-6, Rigour = "None") { #sqrt(.Machine$double.eps) ) {
   Lambda <- numeric(4)
   #names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
-  NelderMeadArgs <- list(method = "Nelder-Mead", 
-                         poptim = 0.05,
-                         pressel = 0.5,
-                         control = list(reltol = Tolerance, maxit = 100))
   
-  # Genetic algorithm first: locate the general vicinity of the minimum
-  GA <- ga(type = "real-valued",
-           fitness = function(x, ...) .DeltaAllGLD(x, ...), A = TarMo, MinMax = 1,
-           suggestions = rbind(InitLambda),
-           lower = Lower, upper = Upper,
-           popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
-           #optim = TRUE, optimArgs = NelderMeadArgs,
-           monitor = NULL)
+  if (Rigour == "Genetics") {
+    NelderMeadArgs <- list(method = "Nelder-Mead", 
+                           poptim = 0.05,
+                           pressel = 0.5,
+                           control = list(reltol = Tolerance, maxit = 100))
+    
+    # Genetic algorithm first: locate the general vicinity of the minimum
+    GA <- ga(type = "real-valued",
+             fitness = function(x, ...) .DeltaAllGLD(x, ...), A = TarMo, MinMax = 1,
+             suggestions = rbind(InitLambda),
+             lower = Lower, upper = Upper,
+             popSize = 100, maxiter = 1000, run = 100, pmutation = 0.15,
+             monitor = NULL)
+    ResetLambda <- GA@solution[1,]
+  } else {
+    ResetLambda <- InitLambda
+  }
 
-  if (length(GA@solution[1,]) == length(InitLambda) ||
-      all(GA@solution[1,] >= Lower) ||
-      all(GA@solution[1,] <= Upper)) {
+  # Run Nelder-Mead 
+  if (length(ResetLambda) == length(InitLambda) ||
+      all(ResetLambda >= Lower) || all(ResetLambda <= Upper)) {
 
-    r <- nmkb(GA@solution[1,], fn = .DeltaAllGLD, A = TarMo, 
-                  lower = Lower, upper = Upper, 
-                  control = list(tol = 9e6, maxfeval = 5E5, trace = TRUE))
+    r <- nmkb(ResetLambda, fn = .DeltaAllGLD, A = TarMo, 
+              lower = Lower, upper = Upper, 
+              control = list(tol = 9e6, maxfeval = 5E5, trace = TRUE))
     
     if (r$convergence == 0) {
       Lambda[3] <- r$par[1]
