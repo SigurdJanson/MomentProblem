@@ -20,3 +20,8 @@
   return(X)
 }
 
+
+logseq <- function(from = 1, to = 1, by = 1) {
+  exp(log(10)*seq(log10(from), log10(to), by = by))
+}
+

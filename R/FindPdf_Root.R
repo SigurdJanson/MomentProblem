@@ -662,6 +662,7 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     stop("Pdf has not been evaluated.")
   if(!UsePdf && is.null(Pdf$DistaMo)) 
     stop("Moments have not been evaluated.")
+  require(ggplot2, quietly = TRUE)
   
   if(UsePdf) {
     Data <- as.data.frame(Pdf$DistaFu[!is.na(Pdf$DistaFu[, "Delta"]), ])
@@ -669,8 +670,12 @@ hist.ByMomentPdf <- function(Pdf, UsePdf = FALSE) {
     Data <- as.data.frame(Pdf$DistaMo[!is.na(Pdf$DistaMo[, "Delta"]), ])
   }
   
+  DataRange <- range(Data[, "Delta"])
+  breaks <- logseq(floor(DataRange[1]), ceiling(DataRange[2]), 0.2)
+
   p <- ggplot(data = Data, aes(x = Delta, na.rm = TRUE)) + 
-         geom_histogram()
+    geom_histogram(breaks=breaks) +
+    scale_x_log10(breaks=breaks, labels=round(breaks, 1))
   print(p)
   invisible(p)
 }
