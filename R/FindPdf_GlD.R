@@ -1,6 +1,4 @@
 library(gld)
-library(GA)
-#library(optimx)
 source("./R/FindPdf_Root.R")
 source("./R/nmkb.R")
 
@@ -317,6 +315,8 @@ source("./R/nmkb.R")
   #names(TarMo) <- c("Mean", "Var", "Skew", "Kurt")
   
   if (Rigour == "Genetics") {
+    require(GA, quietly = TRUE)
+    
     NelderMeadArgs <- list(method = "Nelder-Mead", 
                            poptim = 0.05,
                            pressel = 0.5,
