@@ -188,10 +188,12 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         restarts <- restarts + 1
         orth <- 1
         diams <- min(diam)
-        sx <- sign(0.5 * sign(sgrad)) #TODO: isn't that just `sign(sgrad)` ?????
+        # According to the original matlab code the instruction below must be:
+        # sx=.5+sign(sgrad); sx=sign(sx);
+        sx <- sign(0.5 + sign(sgrad)) 
         happy <- 0L
-        V[, -1] <- V[, 1]
-        diag(V[, -1]) <- diag(V[, -1]) - diams * sx[1:n]
+        V[, -1L] <- V[, 1L]
+        diag(V[, -1L]) <- diag(V[, -1L]) - diams * sx[1L:n]
       }
     }
     # New point accepted; remove old point and restart
