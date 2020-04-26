@@ -123,7 +123,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   restarts <- 0 # number of restarts
   
   itc <- 0L # iteration counter
-  while (nf < maxfeval & restarts < restarts.max & dist > ftol & simplex.size > 1e-06) {
+  while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > 1e-06) {
     happy <- 0L  # `happy == 1` will indicate that new vertex is accepted
     itc <- itc + 1L
     
@@ -135,7 +135,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     nf <- nf + 1
     if (is.nan(fr)) fr <- Inf
 
-    if (fr >= f[1] & fr < f[n]) {
+    if (fr >= f[1] && fr < f[n]) {
       # Reflection was successful
       happy <- 1L
       xnew <- xr
@@ -154,7 +154,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         fnew <- fr
         happy <- 1L
       }
-    } else if (fr >= f[n] & fr < f[n + 1]) {
+    } else if (fr >= f[n] && fr < f[n + 1]) {
       # OUTSIDE CONTRACTION
       xc <- (1 + rho * gamma) * xbar - rho * gamma * V[, n + 1]
       fc <- fnmb(xc, ...)
@@ -179,7 +179,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       }
     }
     # Test for sufficient decrease; do oriented shrink if necessary
-    if (happy == 1 & oshrink == 1L) {
+    if (happy == 1 && oshrink == 1L) {
       fbt <- mean(c(f[1:n], fnew))
       delfb <- fbt - fbc
       armtst <- alpha * sum(sgrad^2)
@@ -190,7 +190,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         diams <- min(diam)
         # According to the original matlab code the instruction below must be:
         # sx=.5+sign(sgrad); sx=sign(sx);
-        sx <- sign(0.5 + sign(sgrad)) 
+        sx <- sign(0.5 + sign(sgrad))
         happy <- 0L
         V[, -1L] <- V[, 1L]
         diag(V[, -1L]) <- diag(V[, -1L]) - diams * sx[1L:n]
@@ -226,7 +226,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   } #while
   
   # Exit code and message
-  if (dist <= ftol | simplex.size <= 1e-06) {
+  if (dist <= ftol || simplex.size <= 1e-06) {
     conv <- 0
     message <- "Successful convergence"
   } else if (nf >= maxfeval) {
