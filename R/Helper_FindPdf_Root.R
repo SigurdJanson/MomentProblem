@@ -40,12 +40,14 @@
 #' @param from,to the starting and (maximal) end values of the sequence. 
 #' Of length 1 unless just from is supplied as an unnamed argument.
 #' @param by Increment of the sequence (numeric).
-#'
 #' @return Numeric vector
 #' @export
-#'
 #' @examples
-logseq <- function(from = 1, to = 1, by = 1) {
-  exp(log(10)*seq(log10(from), log10(to), by = by))
+logseq <- function(from = 1, to = 1, by = ((log10(to) - log10(from))/(length.out - 1)),
+                   length.out = NULL, along.with = NULL, ...) {
+  if(from <= 0 || to <= 0) stop("Values <= 0 not allowed in logarithmic scale.")
+  if(!is.null(along.with)) by <- ((log10(to) - log10(from))/(length(along.with) - 1))
+  
+  exp( log(10) * seq(log10(from), log10(to), by = by, ...) )
 }
 
