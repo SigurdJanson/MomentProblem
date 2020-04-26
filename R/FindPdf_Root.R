@@ -382,10 +382,22 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
 }
 
 
+#' FollowUpOn
+#' Use existing set of parameters and add it to the starting points, 
+#' immediately find solution afterwards and add it, too.
+#' @param Pdf An object of class `ByMomentPdf` or a sub-class.
+#' @param Point An index to a solved parameter set `ParamSolved` or a 
+#' vector giving the parameters.
+#' @return An object of the same class as `Pdf`.
+#' @export
+#' @examples
 FollowUpOn <- function( Pdf, Point ) {
   UseMethod("FollowUpOn")
 }
 
+
+#' FollowUpOn.ByMomentPdf
+#' @describeIn FollowUpOn
 FollowUpOn.ByMomentPdf <- function( Pdf, Point ) {
   # PRECONDITIONS
   if (length(Point) == 1 && is.integer(Point)) {
