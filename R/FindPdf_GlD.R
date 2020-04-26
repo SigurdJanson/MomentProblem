@@ -101,38 +101,7 @@ source("./R/nmkb.R")
 }
 
 
-# OBJECTIVE FUNCTIONS ----
-
-#' .Delta_GLD
-#' Helper function to compute the distance from the expected values
-#' of the third and fourth moment. This is the objective function 
-#' using only A3/A4.
-#' 
-#' The output of this function must be optimised.
-#' @param L Vector containing lambda3 and 4
-#' @param A3,A4 Desired third and fourth moment
-#' @param MinMax 0 Indicates that the function shall minimise the 
-#' result to support classic optimisation algorithms; 1 indicates 
-#' maximising for the use of genetic algorithms.
-.DeltaA3A4GLD <- function(L, A3, A4, MinMax = 0) {
-  #if(min(L) < -0.25) return(Inf) # Required: min(lambda3,lambda4) > -1/4 
-  if(length(L) == 1) L <- c(L, L)
-  
-  lambda3 <- L[1] # for readibility only
-  lambda4 <- L[2] # for readibility only
-  v1 <- .v1f(lambda3, lambda4) 
-  v2 <- .v2f(lambda3, lambda4)
-  v3 <- .v3f(lambda3, lambda4)
-  v4 <- .v4f(lambda3, lambda4)
-  
-  Delta3 <- abs(A3 - .Alpha3(c(v1, v2, v3, v4)))
-  Delta4 <- abs(A4 - .Alpha4(c(v1, v2, v3, v4)))
-
-  if(MinMax == 0)
-    return( Delta3 + Delta4 )
-  else
-    return( 1 / (Delta3 + Delta4) )
-}
+# OBJECTIVE FUNCTION ----
 
 
 #' .DeltaAllGLD
