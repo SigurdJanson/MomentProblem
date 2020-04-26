@@ -1,5 +1,5 @@
+# You can use this file and run it as job to get a Pdf object
 library(ggplot2)
-#source("FindPdf_Root.R")
 source("./R/FindPdf_GlD.R")
 source("./R/FindPdf_Poly.R")
 
@@ -26,9 +26,11 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
   TargetFunction <- list("dnorm", list(mean = 0, sd = 1))
   Pdf <- New_ByMomentPdf.gld(TarMo, TarFu = TargetFunction)
   if (is.null(Pdf$TarFu)) stop("is.null(Pdf$TarFu) - 0")
-  Pdf <- GetLaunchSpace(Pdf, 1E4, "Harmonic")
+  Pdf <- GetLaunchSpace(Pdf, 5E4, "Harmonic")
 
   # Converge for each launch point
+  # but reserve memory for ParamSolved, first
+  #Pdf$ParamSolved <- lapply( 1:nrow(Pdf$LaunchSpace), function(x) list(x, numeric(4)) )
   for(LP in 1:nrow(Pdf$LaunchSpace)) {
     Pdf <- FindPdf( Pdf, LP, Append = TRUE )
     if(LP %% 1000 == 0) cat("o")
@@ -38,6 +40,19 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
   UsePdf <- TRUE
   Pdf  <- EvaluatePdf(Pdf, UsePdf = UsePdf)
   Best <- BestSolution(Pdf, UsePdf = UsePdf)
+  
+  # Press et al recommend in "Numerical Recipes" to take a solution and re-run 
+  # a point, It can help make sure that a point is the global maximum. No 
+  # promises, though.
+  cat("\nFollow-up ")
+  OldBest <- FALSE
+  while (any(OldBest != Best)) {
+    cat(".")
+    Pdf <- FollowUpOn(Pdf, Best[, 3:4])
+    OldBest <- Best
+    Pdf  <- EvaluatePdf(Pdf, UsePdf = UsePdf)
+    Best <- BestSolution(Pdf, UsePdf = UsePdf)
+  }
   
   summary(Pdf)
   Champion <- as.list(Best[1,])
@@ -49,4 +64,3 @@ GetPdf <- function( TarMo, Template = c("gld", "pearson", "poly"),
 }
 
 Pdf <- GetPdf(c(0, 1, 0, 3), "gld")
-
