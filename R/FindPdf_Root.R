@@ -277,6 +277,7 @@ SetLaunchSpace <- function( LaunchSpace ) {
 
 
 
+
 # Solutions ----
 
 #' AddSolution
@@ -379,6 +380,39 @@ FindPdf <- function( Pdf, LaunchPoint, Append = FALSE, ... ) {
   # RESULT
   UseMethod("FindPdf")
 }
+
+
+FollowUpOn <- function( Pdf, Point ) {
+  UseMethod("FollowUpOn")
+}
+
+FollowUpOn.ByMomentPdf <- function( Pdf, Point ) {
+  # PRECONDITIONS
+  if (length(Point) == 1 && is.integer(Point)) {
+    # Get according `ParamSolved`
+    Index <- lapply(Pdf$ParamSolved, `[[`, 1)
+    Point <- Pdf$ParamSolved[[which(Index == Point)]][[2]]
+  }
+  if (length(Point) != ncol(Pdf$ParamSpace)) 
+    stop("New point must have the same dimensions as existing space.")
+  if ( any(Point < Pdf$ParamSpace["from",]) || 
+       any(Point > Pdf$ParamSpace["to",])) {
+    stop("New point is outside bounds of parameter space.")
+  }
+  
+  # RUN
+  Pdf$LaunchSpace <- rbind(Pdf$LaunchSpace, Point)
+  PointIndex <- nrow(Pdf$LaunchSpace)
+  # If the new point is the only one without a solution ...
+  if(length(Pdf$ParamSolved)+1 == nrow(Pdf$LaunchSpace)) {
+    # immediately find solution for new point
+    Pdf <- FindPdf( Pdf, PointIndex, Append = TRUE )
+  }
+  
+  return(Pdf)
+}
+
+
 
 
 
