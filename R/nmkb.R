@@ -1,5 +1,6 @@
-#' nmkb
-#' Nelder-Mead with Box constraints
+
+#' nmkp
+#' Nelder-Mead with box constraints
 #' @details see https://rdrr.io/cran/dfoptim/man/nmkb.html
 #' @note The parameters controlling the behaviour of the simplex are chosen
 #' according to Gao & Han (2010) instead of the original choice by Nelder & Mead.
@@ -20,7 +21,7 @@
 # Lagarias, J. et al (1998). "Convergence Properties of the Nelder–Mead Simplex Method in Low Dimensions"
 # In a nonshrink condition only one point has changed and the ordering can be updated in linear time 
 # (at most n comparisons) by one step of straight insertion sort. 
-nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
+nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   ctrl <- list(tol = 1e-06, maxfeval = min(5000, max(1500, 20 * length(par)^2)), 
                regsimp = TRUE, maximize = FALSE, restarts.max = 3, trace = FALSE)
   namc <- match.arg(names(control), choices = names(ctrl), several.ok = TRUE)
@@ -94,9 +95,9 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
   }
   f[is.nan(f)] <- Inf
-  nf <- n + 1     # number of calls of objective function
+  nf <- n + 1L     # number of calls of objective function
   # Sort simplex vertices according to f(v)
-  ord <- order(f) #TODO: enhance for speed and tie-breaks
+  ord <- order(f)
   f <- f[ord]
   V <- V[, ord]
   
@@ -109,8 +110,6 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # reflected without expansion, contraction, or shrinking
   oshrink <- 1L
   
-  orth <- 0 #TODO: this variable has no explanation
-  
   v <- V[, -1] - V[, 1]
   delf <- f[-1] - f[1]          # "delta f"
   diam <- sqrt(colSums(v^2))    # diameter of the simplex???
@@ -120,7 +119,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # Termination criteria (`nf` has been defined above)
   simplex.size <- sum(abs(V[, -1] - V[, 1]))/max(1, sum(abs(V[, 1])))
   dist <- f[n + 1] - f[1] # distance between f(highest) and f(lowest) vertex
-  restarts <- 0 # number of restarts
+  restarts <- 0L # number of restarts
   
   itc <- 0L # iteration counter
   while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > 1e-06) {
@@ -132,7 +131,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     xbar <- rowMeans(V[, 1:n])  # centroid of the simplex - TODO: enhance computation - see formula (7)
     xr <- (1 + rho) * xbar - rho * V[, n + 1]
     fr <- fnmb(xr, ...)
-    nf <- nf + 1
+    nf <- nf + 1L
     if (is.nan(fr)) fr <- Inf
 
     if (fr >= f[1] && fr < f[n]) {
@@ -144,7 +143,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       xe <- (1 + rho * chi) * xbar - rho * chi * V[, n + 1]
       fe <- fnmb(xe, ...)
       if (is.nan(fe)) fe <- Inf
-      nf <- nf + 1
+      nf <- nf + 1L
       if (fe < fr) {
         xnew <- xe
         fnew <- fe
@@ -159,7 +158,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       xc <- (1 + rho * gamma) * xbar - rho * gamma * V[, n + 1]
       fc <- fnmb(xc, ...)
       if (is.nan(fc)) fc <- Inf
-      nf <- nf + 1
+      nf <- nf + 1L
       if (fc <= fr) {
         xnew <- xc
         fnew <- fc
@@ -171,7 +170,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       fc <- fnmb(xc, ...)
       if (is.nan(fc)) 
         fc <- Inf
-      nf <- nf + 1
+      nf <- nf + 1L
       if (fc < f[n + 1]) {
         xnew <- xc
         fnew <- fc
@@ -185,8 +184,7 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       armtst <- alpha * sum(sgrad^2)
       if (delfb > -armtst/n) {
         if (trace) cat("Trouble - restarting: \n")
-        restarts <- restarts + 1
-        orth <- 1
+        restarts <- restarts + 1L
         diams <- min(diam)
         # According to the original matlab code the instruction below must be:
         # sx=.5+sign(sgrad); sx=sign(sx);
@@ -200,23 +198,21 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     if (happy == 1) {
       V[, n + 1] <- xnew
       f[n + 1] <- fnew
-      ord <- order(f)
+      ord <- order(f) # Sort #TODO: enhance for speed and tie-breaks
       V <- V[, ord]
       f <- f[ord]
     } else if (happy == 0 & restarts < restarts.max) {
-      if (orth == 0) orth <- 1
       V[, -1] <- V[, 1] - sigma * (V[, -1] - V[, 1])
       for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
       nf <- nf + n
-      # Sort
-      ord <- order(f) #TODO: enhance for speed and tie-breaks
+      ord <- order(f) 
       V <- V[, ord]
       f <- f[ord]
     }
     v <- V[, -1] - V[, 1]
     delf <- f[-1] - f[1]
     diam <- sqrt(colSums(v^2))
-    simplex.size <- sum(abs(v))/max(1, sum(abs(V[, 1])))
+    simplex.size <- sum(abs(v))/max(1, sum(abs(V[, 1]))) #TODO: change simplex.size to rationale to Singer & Singer formula 16
     f[is.nan(f)] <- Inf
     dist <- f[n + 1] - f[1]
     sgrad <- c(solve(t(v), delf))
@@ -239,34 +235,9 @@ nmkb <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     conv <- 99
     message <- "Unexpected termination"
   }
-  return(list(par = ginv(V[, 1]), value = f[1] * (-1)^maximize, feval = nf, 
+  return(list(par = ginv(V[, 1]), value = f[1] * maximize, feval = nf, 
               restarts = restarts, convergence = conv, message = message))
 }
-
-
-
-
-rosbkext <- function(x) {
-  # Extended Rosenbrock function
-  n <- length(x)
-  sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
-}
-
-np <- 10
-#set.seed(123)
-p0 <- rnorm(np)
-p0[p0 > +2] <- +2 - 1E-8
-p0[p0 < -2] <- -2 + 1E-8
-e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
-# o <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
-# 
- ctrl <- list(maxfeval = 50000)
- #set.seed(123)
- p0 <- rnorm(np)
- p0[p0 > +2] <- +2 - 1E-8
- p0[p0 < -2] <- -2 + 1E-8
- e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
-# o <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
 
 
 
