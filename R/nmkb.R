@@ -37,6 +37,7 @@
 # In a nonshrink condition only one point has changed and the ordering can be updated in linear time 
 # (at most n comparisons) by one step of straight insertion sort. 
 nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
+  # BASIC CONSTANTS THAT DETERMINE THE BEHAVIOUR OF THE ALGORITHM
   ctrl <- list(tol = 1e-06, maxfeval = min(5000, max(1500, 20 * length(par)^2)), 
                regsimp = TRUE, maximize = FALSE, restarts.max = 3, trace = FALSE)
   namc <- match.arg(names(control), choices = names(ctrl), several.ok = TRUE)
@@ -50,7 +51,9 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   restarts.max <- ctrl$restarts.max
   maximize <- ifelse(ctrl$maximize, -1, 1)
   trace <- ctrl$trace
-
+  # Setting oshrink=0 gives vanilla Nelder-Mead, i.e. the simplex is merely
+  # reflected without expansion, contraction, or shrinking
+  oshrink <- 1L
   # Dimensions of paramter space
   n <- length(par) 
   if (n == 1) 
@@ -58,6 +61,13 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   if (n > 32) 
     warning("Nelder-Mead should not be used for high-dimensional optimization")
   
+  # Basic Nelder-Mead transformation parameters
+  rho <- 1              # reflection  alpha
+  chi <- 1 + 2/n        # expansion   beta
+  gamma <- 0.75 - 1/2/n # contraction gamma
+  sigma <- 1 - 1/n      # shrinkage   delta
+  
+  # SETUP
   # Spatial distortion functions to handle box constraints
   g <- function(x) {
     gx <- x
@@ -95,6 +105,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
 
   x0 <- g(par) # x0 is the starting point
   
+  # RUN
   # Initial values: V - vertices of the simplex. f - result of objective function.
   V <- cbind(rep(0, n), diag(n))
   f <- rep(0, n + 1)
@@ -113,20 +124,11 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   }
   f[is.nan(f)] <- Inf
   nf <- n + 1L     # number of calls of objective function
-  # Sort simplex vertices according to f(v)
+  # Initial sorting of simplex vertices according to f(v)
   ord <- order(f)
   f <- f[ord]
   V <- V[, ord]
-  
-  rho <- 1              # reflection  alpha
-  chi <- 1 + 2/n        # expansion   beta
-  gamma <- 0.75 - 1/2/n # contraction gamma
-  sigma <- 1 - 1/n      # shrinkage   delta
-  
-  # Setting oshrink=0 gives vanilla Nelder-Mead, i.e. the simplex is merely
-  # reflected without expansion, contraction, or shrinking
-  oshrink <- 1L
-  
+  # Start values
   v <- V[, -1] - V[, 1]
   delf <- f[-1] - f[1]          # "delta f"
   diam <- sqrt(colSums(v^2))    # diameter of the simplex???
