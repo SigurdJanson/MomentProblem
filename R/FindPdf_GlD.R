@@ -1,6 +1,6 @@
 library(gld)
 source("./R/FindPdf_Root.R")
-source("./R/nmkb.R")
+source("./R/nmkp.R")
 
 
 
@@ -307,9 +307,9 @@ source("./R/nmkb.R")
   if (length(ResetLambda) == length(InitLambda) ||
       all(ResetLambda >= Lower) || all(ResetLambda <= Upper)) {
 
-    r <- nmkb(ResetLambda, fn = .DeltaAllGLD, A = TarMo, 
+    r <- nmkp(ResetLambda, fn = .DeltaAllGLD, A = TarMo, 
               lower = Lower, upper = Upper, 
-              control = list(tol = 9e6, maxfeval = 5E5, trace = TRUE))
+              control = list(tol = 9e6, maxfeval = 5E5, trace = FALSE))
     
     if (r$convergence == 0) {
       Lambda[3] <- r$par[1]
