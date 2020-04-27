@@ -32,7 +32,6 @@
 #' Nelder, J. A., & Mead, R. (1965). A simplex method for function minimization. Computer Journal, 7, 308–313.
 # TODO: find speed optimisations
 #
-# Change re-ordering algorithm to enhance speed and to handle tie-breaks according to 
 # Lagarias, J. et al (1998). "Convergence Properties of the Nelder–Mead Simplex Method in Low Dimensions"
 # In a nonshrink condition only one point has changed and the ordering can be updated in linear time 
 # (at most n comparisons) by one step of straight insertion sort. 
@@ -144,6 +143,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > stol) {
     happy <- 0L  # `happy == 1` will indicate that new vertex is accepted
     itc <- itc + 1L
+    nonshrink <- TRUE
     
     # REFLECT (is always first try)
     fbc <- mean(f)
@@ -211,18 +211,26 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         happy <- 0L
         V[, -1L] <- V[, 1L]
         diag(V[, -1L]) <- diag(V[, -1L]) - diams * sx[1L:n]
+        nonshrink <- FALSE
       }
     }
     # New point accepted; remove old point and restart
     if (happy == 1) {
-      InsertAt <- which.max(fnew < f)
-      V <- .ReplaceVertex(V, xnew, At = InsertAt)
-      f <- append(f[1:n], fnew, InsertAt-1)
+      # Reorder vertices
+      if(nonshrink) {
+        InsertAt <- which.max(fnew < f)
+        V <- .ReplaceVertex(V, xnew, At = InsertAt)
+        f <- append(f[1:n], fnew, InsertAt-1)
+      } else {
+        ord <- order(f)
+        V <- V[, ord]
+        f <- f[ord]
+      }
     } else if (happy == 0 && restarts < restarts.max) {
       V[, -1] <- V[, 1] - sigma * (V[, -1] - V[, 1])
       for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
       nf <- nf + n
-      ord <- order(f) 
+      ord <- order(f) # Reorder vertices
       V <- V[, ord]
       f <- f[ord]
     }
