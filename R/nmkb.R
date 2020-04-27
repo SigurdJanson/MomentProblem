@@ -1,4 +1,19 @@
 
+.ReplaceVertex <- function(V, Vnew, At) {
+  len <- ncol(V)
+  if (At <= 1)
+    Result <- cbind(Vnew, V[, 1L:(len-1L)], deparse.level = 0)
+  else if (At >= len) {
+    V[, len] <- Vnew
+    Result <- V
+  } else {
+    Result <- cbind(V[, 1L:(At-1L)], Vnew, V[, At:(len-1)], deparse.level = 0)
+  }
+  
+  return(Result)
+}
+
+
 #' nmkp
 #' Nelder-Mead with box constraints
 #' @details see https://rdrr.io/cran/dfoptim/man/nmkb.html
@@ -168,7 +183,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       # INSIDE CONTRACTION
       xc <- (1 - gamma) * xbar + gamma * V[, n + 1]
       fc <- fnmb(xc, ...)
-      if (is.nan(fc)) 
+      if (is.nan(fc))
         fc <- Inf
       nf <- nf + 1L
       if (fc < f[n + 1]) {
@@ -196,12 +211,10 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     }
     # New point accepted; remove old point and restart
     if (happy == 1) {
-      V[, n + 1] <- xnew
-      f[n + 1] <- fnew
-      ord <- order(f) # Sort #TODO: enhance for speed and tie-breaks
-      V <- V[, ord]
-      f <- f[ord]
-    } else if (happy == 0 & restarts < restarts.max) {
+      InsertAt <- which.max(fnew < f)
+      V <- .ReplaceVertex(V, xnew, At = InsertAt)
+      f <- append(f[1:n], fnew, InsertAt-1)
+    } else if (happy == 0 && restarts < restarts.max) {
       V[, -1] <- V[, 1] - sigma * (V[, -1] - V[, 1])
       for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
       nf <- nf + n
@@ -218,7 +231,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     sgrad <- c(solve(t(v), delf))
     
     if (trace & !(itc%%2)) 
-      cat("iter: ", itc, "\n", "value: ", f[1], "\n")
+      cat("iter:", itc, "\n", "value:", f[1], "\n")
   } #while
   
   # Exit code and message
@@ -238,6 +251,4 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   return(list(par = ginv(V[, 1]), value = f[1] * maximize, feval = nf, 
               restarts = restarts, convergence = conv, message = message))
 }
-
-
 
