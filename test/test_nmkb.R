@@ -76,6 +76,47 @@ test_that("Maximise/Minimise using Rosenbrock: dfoptim::nmkb", {
 })
 
 
+test_that("Minimise Common Test Functions: nmkp", {
+  rosbkext <- function(x) {
+    n <- length(x)
+    sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
+  }
+  sphere <- function(x) sum(x^2)
+  
+
+  # Test maximisation by calling a negative 'rosbkext' and 
+  # compare it with minimisation: results shall be equal
+  tol <- 5e-5 # accepted tolerance
+  for (np in c(2:6, 12, 24, 32)) {
+    set.seed(123)
+    p0 <- rnorm(np)
+    p0[p0 > +2] <- +2 - 1E-8
+    p0[p0 < -2] <- -2 + 1E-8
+    
+    ctrl <- list(maxfeval = 1E5, tol = 1E-8)
+    o <- nmkp(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
+    expect_equal(o$convergence, 0L, info = paste0(np))
+    expect_equal(o$value, 0.0, tolerance = tol*np, info = paste0(np)) 
+    expect_equal(o$par, rep(1.0, np), tolerance = tol*np, info = paste0(np)) 
+  }
+  
+  # Sphere function
+  tol <- 5e-5 # accepted tolerance
+  box <- 5.2
+  for (np in c(2:6, 12, 24, 32)) {
+    set.seed(123)
+    p0 <- rnorm(np)
+    p0[p0 > +box] <- +box - 1E-8
+    p0[p0 < -box] <- -box + 1E-8
+    
+    ctrl <- list(maxfeval = 1E5, tol = 1E-8)
+    o <- nmkp(fn = sphere, par = p0, lower = -box, upper = box, control = ctrl)
+    expect_equal(o$convergence, 0L, info = paste0(np)) 
+    expect_equal(o$value, 0.0, tolerance = tol*np, info = paste0(np))
+    expect_equal(o$par, rep(0.0, np), tolerance = tol*np, info = paste0(np))
+  }
+  
+})
 
 
 

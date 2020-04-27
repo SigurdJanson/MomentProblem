@@ -30,11 +30,7 @@
 #' Gao, F., & Han, L. (2010). Implementing the Nelder-Mead simplex algorithm with adaptive parameters. Computational Optimization and Applications, 51, 259–277. https://doi.org/10.1007/s10589-010-9329-3
 #' Kelley, C. T. (1999). Iterative Methods for Optimization. Society for Industrial and Applied Mathematics. https://doi.org/10.1137/1.9781611970920
 #' Nelder, J. A., & Mead, R. (1965). A simplex method for function minimization. Computer Journal, 7, 308–313.
-# TODO: find speed optimisations
-#
-# Lagarias, J. et al (1998). "Convergence Properties of the Nelder–Mead Simplex Method in Low Dimensions"
-# In a nonshrink condition only one point has changed and the ordering can be updated in linear time 
-# (at most n comparisons) by one step of straight insertion sort. 
+#' Lagarias, J., Reeds, J., Wright, M., & Wright, P. (1998). Convergence Properties of the Nelder–Mead Simplex Method in Low Dimensions. SIAM Journal on Optimization, 9, 112–147. https://doi.org/10.1137/S1052623496303470
 nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # BASIC CONSTANTS THAT DETERMINE THE BEHAVIOUR OF THE ALGORITHM
   ctrl <- list(tol = 1e-06, maxfeval = min(5000, max(1500, 20 * length(par)^2)), 
@@ -133,6 +129,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   diam <- sqrt(colSums(v^2))    # diameter of the simplex???
   sgrad <- c(solve(t(v), delf))
   alpha <- 1e-04 * max(diam)/sqrt(sum(sgrad^2))
+  xbar <- rowMeans(V[, 1:n]) # initial centroid of the simplex
   
   # Termination criteria (`nf` has been defined above)
   simplex.size <- sum(abs(V[, -1] - V[, 1]))/max(1, sum(abs(V[, 1])))
@@ -143,11 +140,10 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > stol) {
     happy <- 0L  # `happy == 1` will indicate that new vertex is accepted
     itc <- itc + 1L
-    nonshrink <- TRUE
+    nonshrinkit <- TRUE
     
     # REFLECT (is always first try)
     fbc <- mean(f)
-    xbar <- rowMeans(V[, 1:n])  # centroid of the simplex - TODO: enhance computation - see formula (7)
     xr <- (1 + rho) * xbar - rho * V[, n + 1]
     fr <- fnmb(xr, ...)
     nf <- nf + 1L
@@ -211,28 +207,37 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         happy <- 0L
         V[, -1L] <- V[, 1L]
         diag(V[, -1L]) <- diag(V[, -1L]) - diams * sx[1L:n]
-        nonshrink <- FALSE
+        nonshrinkit <- FALSE
       }
     }
     # New point accepted; remove old point and restart
     if (happy == 1) {
-      # Reorder vertices
-      if(nonshrink) {
+      if(nonshrinkit) {
+        # Insert new vertex and reorder
         InsertAt <- which.max(fnew < f)
         V <- .ReplaceVertex(V, xnew, At = InsertAt)
         f <- append(f[1:n], fnew, InsertAt-1)
+        # Update centroid of the simplex
+        if(InsertAt < n+1)
+          xbar <- xbar + (xnew - V[, n+1])/n 
       } else {
+        # Insert new vertex and reorder
+        V[, n + 1] <- xnew
+        f[n + 1] <- fnew
         ord <- order(f)
         V <- V[, ord]
         f <- f[ord]
+        # Update centroid of the simplex
+        xbar <- rowMeans(V[, 1:n])
       }
     } else if (happy == 0 && restarts < restarts.max) {
       V[, -1] <- V[, 1] - sigma * (V[, -1] - V[, 1])
       for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
       nf <- nf + n
-      ord <- order(f) # Reorder vertices
+      ord <- order(f) # Order the vertices
       V <- V[, ord]
       f <- f[ord]
+      xbar <- rowMeans(V[, 1:n]) # Centroid
     }
     v <- V[, -1] - V[, 1]
     delf <- f[-1] - f[1]
@@ -263,4 +268,5 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   return(list(par = ginv(V[, 1]), value = f[1] * maximize, feval = nf, 
               restarts = restarts, convergence = conv, message = message))
 }
+
 
