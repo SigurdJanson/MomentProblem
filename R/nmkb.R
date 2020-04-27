@@ -44,6 +44,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     stop("unknown names in 'control': ", namc[!(namc %in% names(ctrl))])
   if (!is.null(names(control))) ctrl[namc] <- control
   ftol <- ctrl$tol
+  stol <- 1E-6
   maxfeval <- ctrl$maxfeval
   regsimp <- ctrl$regsimp
   restarts.max <- ctrl$restarts.max
@@ -54,13 +55,13 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   n <- length(par) 
   if (n == 1) 
     stop(call. = FALSE, "Use `optimize` for univariate optimization")
-  if (n > 30) 
+  if (n > 32) 
     warning("Nelder-Mead should not be used for high-dimensional optimization")
   
   # Spatial distortion functions to handle box constraints
   g <- function(x) {
     gx <- x
-    gx[c1] <- atanh(2 * (x[c1] - lower[c1]) / (upper[c1] - lower[c1]) - 1)
+    gx[c1] <- atanh(2 * (x[c1] - lower[c1]) / rangex[c1] - 1)
     gx[c3] <- log(x[c3] - lower[c3])
     gx[c4] <- log(upper[c4] - x[c4])
     gx
@@ -68,7 +69,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   
   ginv <- function(x) {
     gix <- x
-    gix[c1] <- lower[c1] + (upper[c1] - lower[c1])/2 * (1 + tanh(x[c1]))
+    gix[c1] <- lower[c1] + rangex[c1]/2 * (1 + tanh(x[c1]))
     gix[c3] <- lower[c3] + exp(x[c3])
     gix[c4] <- upper[c4] - exp(x[c4])
     gix
@@ -81,10 +82,11 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   if (any(c(par < lower, upper < par))) stop("Infeasible starting values!", call.=FALSE)
   low.finite <- is.finite(lower)
   upp.finite <- is.finite(upper)
-  c1 <- low.finite & upp.finite  # both lower and upper bounds are finite 
+  c1 <- low.finite & upp.finite   # both lower and upper bounds are finite 
   c2 <- !(low.finite | upp.finite) # both lower and upper bounds are infinite
-  c3 <- !(c1 | c2) & low.finite # finite lower bound, infinite upper bound
-  c4 <- !(c1 | c2) & upp.finite  # finite upper bound, infinite lower bound
+  c3 <- !(c1 | c2) & low.finite   # finite lower bound, infinite upper bound
+  c4 <- !(c1 | c2) & upp.finite   # finite upper bound, infinite lower bound
+  rangex <- (upper - lower)       # range needed for g and ginv
   
   if (all(c2)) stop("Use `nmk()` for unconstrained optimization!", call.=FALSE)
   
@@ -137,7 +139,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   restarts <- 0L # number of restarts
   
   itc <- 0L # iteration counter
-  while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > 1e-06) {
+  while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > stol) {
     happy <- 0L  # `happy == 1` will indicate that new vertex is accepted
     itc <- itc + 1L
     
@@ -235,17 +237,17 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   } #while
   
   # Exit code and message
-  if (dist <= ftol || simplex.size <= 1e-06) {
-    conv <- 0
+  if (dist <= ftol || simplex.size <= stol) {
+    conv <- 0L
     message <- "Successful convergence"
   } else if (nf >= maxfeval) {
-    conv <- 1
+    conv <- 1L
     message <- "Maximum number of fevals exceeded"
   } else if (restarts >= restarts.max) {
-    conv <- 2
+    conv <- 2L
     message <- "Stagnation in Nelder-Mead"
   } else {
-    conv <- 99
+    conv <- 99L
     message <- "Unexpected termination"
   }
   return(list(par = ginv(V[, 1]), value = f[1] * maximize, feval = nf, 
