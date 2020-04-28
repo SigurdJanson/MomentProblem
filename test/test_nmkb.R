@@ -1,5 +1,6 @@
 setwd("..")
 source("./R/nmkp.R")
+source("./test/nmk.dfoptim.R")
 source("./test/nmkb.dfoptim.R")
 setwd("./test")
 
@@ -87,7 +88,7 @@ test_that("Minimise Common Test Functions: nmkp", {
   # Test maximisation by calling a negative 'rosbkext' and 
   # compare it with minimisation: results shall be equal
   tol <- 5e-5 # accepted tolerance
-  for (np in c(2:6, 12)){#, 24, 32)) {, 24, 32)) {
+  for (np in c(2:6, 12, 24, 32)) {
     set.seed(123)
     p0 <- rnorm(np)
     p0[p0 > +2] <- +2 - 1E-8
@@ -103,7 +104,7 @@ test_that("Minimise Common Test Functions: nmkp", {
   # Sphere function
   tol <- 5e-5 # accepted tolerance
   box <- 5.2
-  for (np in c(2:6, 12)){#, 24, 32)) {
+  for (np in c(2:6, 12, 24, 32)) {
     set.seed(123)
     p0 <- rnorm(np)
     p0[p0 > +box] <- +box - 1E-8
@@ -121,7 +122,7 @@ test_that("Minimise Common Test Functions: nmkp", {
 
 
 # Comparison with Original ----
-test_that("Comparison 'dfoptim::nmkb' vs 'nmkp'", {
+test_that("Comparison 'dfoptim::nmkb' & 'nmk' vs 'nmkp'", {
   # Functions
   rosbk <- function(x) {
     n <- length(x)
@@ -139,14 +140,28 @@ test_that("Comparison 'dfoptim::nmkb' vs 'nmkp'", {
   
   
   Functions <- c(rosbk, sphere, mccormick, rastrigin, schwefel, sudipo)
+  loop <- 0
   for(f in Functions) {
+    loop <- loop +1
     set.seed(123)
     p0 <- rnorm(np)
+    # Unconstrained
+    if (loop != 3) {
+      e <- nmk(fn = f, par = p0)
+      o <- nmkp(fn = f, par = p0)
+      expect_equal(o, e, info = paste0(f, "(", p0, ")")) 
+    }
+    else { # for some reason it cannot handle the mccormick function
+      # Error: "System ist für den Rechner singulär: reziproke Konditionszahl"
+      expect_error(nmk(fn = f, par = p0))
+      expect_error(nmkp(fn = f, par = p0))
+    }
+    # Box constrained
     p0[p0 > +2] <- +2 - 1E-8
     p0[p0 < -2] <- -2 + 1E-8
     e <- nmkb(fn = f, par = p0, lower = -2, upper = 2)
     o <- nmkp(fn = f, par = p0, lower = -2, upper = 2)
-    expect_equal(o, e) 
+    expect_equal(o, e, info = paste0(f, "(", p0, ")")) 
   }
 
   

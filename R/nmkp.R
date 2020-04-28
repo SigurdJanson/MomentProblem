@@ -93,12 +93,16 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   c4 <- !(c1 | c2) & upp.finite   # finite upper bound, infinite lower bound
   rangex <- (upper - lower)       # range needed for g and ginv
   
-  if (all(c2)) stop("Use `nmk()` for unconstrained optimization!", call.=FALSE)
-  
   # Set objective function
-  fnmb <- function(par, ...) { fn(ginv(par), ...) * maximize }
+  if(all(c2)) {
+    fnmb <- function(par, ...) { fn(par, ...) * maximize }
+    x0 <- par # x0 is starting point without transformation
+  }
+  else {
+    fnmb <- function(par, ...) { fn(ginv(par), ...) * maximize }
+    x0 <- g(par) # x0 is the starting point
+  }
 
-  x0 <- g(par) # x0 is the starting point
   
   # RUN
   # Initial values: V - vertices of the simplex. f - result of objective function.
@@ -265,8 +269,9 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     conv <- 99L
     message <- "Unexpected termination"
   }
-  return(list(par = ginv(V[, 1]), value = f[1] * maximize, feval = nf, 
-              restarts = restarts, convergence = conv, message = message))
+  return(list(par = ifelse(c2, V[, 1], ginv(V[, 1])), value = f[1] * maximize, 
+              feval = nf, restarts = restarts, 
+              convergence = conv, message = message))
 }
 
 
