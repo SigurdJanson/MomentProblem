@@ -137,7 +137,7 @@ nmk <- function(par, fn, control=list(), ...) {
           restarts <- restarts + 1
           orth <- 1
           diams <- min(diam)
-          sx <- sign(0.5 * sign(sgrad))
+          sx <- sign(0.5 + sign(sgrad))
           happy <- 0
           V[, -1] <- V[, 1]
           diag(V[, -1]) <- diag(V[, -1]) - diams * sx[1:n]
