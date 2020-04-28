@@ -1,5 +1,5 @@
 setwd("..")
-source("./R/nmkb.R")
+source("./R/nmkp.R")
 source("./test/nmkb.dfoptim.R")
 setwd("./test")
 
@@ -87,7 +87,7 @@ test_that("Minimise Common Test Functions: nmkp", {
   # Test maximisation by calling a negative 'rosbkext' and 
   # compare it with minimisation: results shall be equal
   tol <- 5e-5 # accepted tolerance
-  for (np in c(2:6, 12, 24, 32)) {
+  for (np in c(2:6, 12)){#, 24, 32)) {, 24, 32)) {
     set.seed(123)
     p0 <- rnorm(np)
     p0[p0 > +2] <- +2 - 1E-8
@@ -103,7 +103,7 @@ test_that("Minimise Common Test Functions: nmkp", {
   # Sphere function
   tol <- 5e-5 # accepted tolerance
   box <- 5.2
-  for (np in c(2:6, 12, 24, 32)) {
+  for (np in c(2:6, 12)){#, 24, 32)) {
     set.seed(123)
     p0 <- rnorm(np)
     p0[p0 > +box] <- +box - 1E-8
@@ -121,33 +121,46 @@ test_that("Minimise Common Test Functions: nmkp", {
 
 
 # Comparison with Original ----
-test_that("Rosenbrock: dfoptim::nmkb vs 'nmkp'", {
-  rosbkext <- function(x) {
+test_that("Comparison 'dfoptim::nmkb' vs 'nmkp'", {
+  # Functions
+  rosbk <- function(x) {
     n <- length(x)
     sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
   }
-
+  sphere   <- function(x) sum(x^2)
+  mccormick <- function(x) sin(sum(x)) + (x[1]-x[2])^2 - sum(c(1.5, 2.5)*x) +1
+  rastrigin <- function(x) 10*length(x) + sum(x^2 - 10*cos(1*pi*x))
+  schwefel <- function(x) 418.9829*length(x) - sum(x*sin(sqrt(abs(x))))
+  sudipo <- function(x) sum((abs(x))^(2:(length(x)+1)))
+  
   # Direct comparison only possible for two dimensions because of
   # improvement of transformation parameters rho, chi, ...
   np <- 2
-  set.seed(123)
-  p0 <- rnorm(np)
-  p0[p0 > +2] <- +2 - 1E-8
-  p0[p0 < -2] <- -2 + 1E-8
-  e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
-  o <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2)
-  expect_identical(o, e) # trivial comparison
-  o <- nmkp(fn = rosbkext, par = p0, lower = -2, upper = 2)
-  expect_equal(o, e) 
   
+  
+  Functions <- c(rosbk, sphere, mccormick, rastrigin, schwefel, sudipo)
+  for(f in Functions) {
+    set.seed(123)
+    p0 <- rnorm(np)
+    p0[p0 > +2] <- +2 - 1E-8
+    p0[p0 < -2] <- -2 + 1E-8
+    e <- nmkb(fn = f, par = p0, lower = -2, upper = 2)
+    o <- nmkp(fn = f, par = p0, lower = -2, upper = 2)
+    expect_equal(o, e) 
+  }
+
+  
+  # Rosenbrock terminates too soon with default 'control$maxfeval'.
+  # Hence run it again. Just for diligence
   ctrl <- list(maxfeval = 50000)
   set.seed(123)
   p0 <- rnorm(np)
   p0[p0 > +2] <- +2 - 1E-8
   p0[p0 < -2] <- -2 + 1E-8
-  e <- nmkb(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
-  o <- nmkp(fn = rosbkext, par = p0, lower = -2, upper = 2, control = ctrl)
+  e <- nmkb(fn = rosbk, par = p0, lower = -2, upper = 2, control = ctrl)
+  o <- nmkp(fn = rosbk, par = p0, lower = -2, upper = 2, control = ctrl)
   expect_equal(o, e)
+  
 })
 
 
