@@ -1,0 +1,102 @@
+---
+title: "Adaptive Restart"
+author: "Dr. Jan Seifert"
+date: "29 4 2020"
+output: html_document
+bibliography: MomentProblem.bib
+csl: apa-6th-edition.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Being a heuristic Nelder-Mead algorithm [@Nelder1965] does not guarantee that it finds a global optimum. It can also converge to rather subpar local solutions. In fact, sometimes it fails under rather simple and obvious circumstances. @McKinnon1998 showed how the algorithm fails to converge correctly even for convex functions with only two variables.
+
+The solution found by a Nelder-Mead run highly depends on the starting point used to create the initial simplex. That is why this notes explore the chances of improving the search by running the Nelder-Mead (or any other algorithm) in iterations while chosing different starting points in each iteration. There are several ways to do it. To gather my thoughts I went through all of them starting with the least inspired approach and removed them one by one until a final candidate stayed.
+
+
+## Brute Force
+
+Sample as many points as possible and start a search from each one of them.
+
+Because of its simplicity this approach was used in the code for a long time. Other solutions were more sophisticated. But I did not want to give the simplicityup before I found something that does not only have better benefits but also a better cost-benefit ratio.
+
+A variation would have been an incremental brute force option. The only advantage would have been that I do not have to run the program once hoping for good results right away. I would have been able to run it again and again. It would have worked for me but my curiosity wanted a more elegant solution.
+
+
+
+## Agoraphobia
+
+We determine one point that has the farthest distance to all already sampled points.
+
+One might imagine that this approach can be time-consuming and lead to inconclusive results.
+
+
+
+## Stereotypy
+
+@Press1992 suggests that you should always re-run a Nelder-Mead algorithm with the solution of the first one as input to the second.
+
+I tried that using the best solution after a brute force search with thousands of starting points. In dozens of tries it never came up with something. The results always was the previous result.
+
+
+
+## Repulsion
+
+In a more perfectionist approach we would "draw" a map with all sampled points. Each point is surrounded by a barrier that prevents other points from settling close to it. Naturally, these barriers would overlap. If the parameter space is large (or probably $\pm\infty$) this representation would have to be rather memory-consuming and it's maintenance would take more time than running the search.
+
+@Luersen2004 offer something similar using a less algorithmic and more mathematical approach. The compute the sampling probability of a large sample of points and then randomly pick one point with respect to their sampling probabilities. But still this approach requires considerable processing power.
+
+
+
+## Variable Variance Probability
+
+The "Variable Variance Probability" by @Ghiasi2008 might provide a solution for that. In their approach, one can determine the sampling probability $\phi(x)$ of any point x using the distance to the nearest point only. 
+
+* $d_{min}$ is the normalised distance to the nearest neighbour.
+* $\sigma$ is the standard deviation.
+
+$$
+\phi(x) = { 1 \over {\sigma \sqrt{2 \pi}} } 1 - e^{-(\frac{d_{min}}{2\sigma})^2}
+$$
+
+The variance of the normal probability density depends on the already sampled points and must be updated in each restart:
+
+$$ \sigma = \frac{1}{3 \sqrt[n]{m}} $$
+
+$d_{min}$ is minimum distance to the points already sampled. As a consequence, the variance gradually decreases when the number of sampled points increases.
+
+$$
+d_{min} = \underset{i=1,..,m}{min} \left\{ d_i = \sqrt{\sum_{k=1}^{n} {\frac{x_{k,i}-x_k}{x_{ku}-x_{kl}}^2}} \right\}
+$$
+
+* Length $d_i$ is the non-dimensional distance between point $x$ and point $x_i$.
+* $n$ is the number of design variables. 
+* $m$ is the number of points already sampled.
+* $x_{ku}$ largest coordinate value of point x (this is actually a guess and could be verified)
+* $x_{kl}$ smallest coordinate value of point x (this is actually a guess and could be verified)
+
+
+In comparison, the normal distribution:
+$$
+f(x) = \frac{1}{\sigma \sqrt{2\pi} } e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}
+$$
+
+
+
+### Concrete Implementation
+
+1. Specify the number of desired iterations (i.e. starting points) $n_s$.
+2. Create a large number of starting points $n_a = f(n_s)$ with $n_a \gg n_s$.
+3. Determine the nearest neighbour for each point.
+4. Store the distance of nearest neighbour besides each starting point (and throw away the matrix of all distances).
+5. Pick a starting point with regard to sampling probabilities (which has no consequences in the first run).
+6. Run optimisation.
+7. Repeat with 5. unless $n_s$ starting points have been reached.
+8. Analyse the results.
+
+
+
+# References
+
