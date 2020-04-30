@@ -83,14 +83,9 @@ GetHarmonicPoints <- function( Dim, N = 20, Seed = 0.5 ) {
   Alpha <- (1/G^(1:Dim)) %% 1
   
   Z <- matrix(nrow = N, ncol = Dim)
-  #for i in range(n): 
-  #  z[i] = (seed + Alpha*(i+1)) %1 
   for (d in 1:Dim) {
     Z[, d] <- (Seed + Alpha[d] * 1:N) %% 1
   }
   return(Z)
 }
 
-# x <- GetHarmonicPoints(5, 100)
-# x <- GetHarmonicPoints(2, 50)
-# plot(x[,1], x[,2])
