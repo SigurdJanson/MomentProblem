@@ -82,6 +82,17 @@ In comparison, the normal distribution:
 $$
 f(x) = \frac{1}{\sigma \sqrt{2\pi} } e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}
 $$
+For a visual comparison, let us look at a normal distribution put upside down (gray) and the vvp function $\phi$. The dashed line shows the difference between the two curves.
+
+```{r}
+vvp <- function(d, sd = 1) {
+  (1 - exp(-1*d^2/4/sd^2)) / sd / sqrt(2*pi)
+}
+x <- seq(-4, 5, 0.1)
+plot(x, dnorm(0)-dnorm(x), type = "l", col = "darkgray", ylab = "f(x)")
+lines(x, vvp(x))
+lines(x, abs(vvp(x)-(dnorm(0)-dnorm(x))), type = "l", lty = "longdash", col = "darkgray")
+```
 
 
 
