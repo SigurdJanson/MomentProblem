@@ -16,6 +16,7 @@
 
 #' nmkp
 #' Nelder-Mead with box constraints
+#' @param ... see https://rdrr.io/cran/dfoptim/man/nmkb.html
 #' @details see https://rdrr.io/cran/dfoptim/man/nmkb.html
 #' @note The parameters controlling the behaviour of the simplex are chosen
 #' according to Gao & Han (2010) instead of the original choice by Nelder & Mead.
@@ -46,9 +47,9 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   restarts.max <- ctrl$restarts.max
   maximize <- ifelse(ctrl$maximize, -1, 1)
   trace <- ctrl$trace
-  # Setting oshrink=0 gives vanilla Nelder-Mead, i.e. the simplex is merely
-  # reflected without expansion, contraction, or shrinking
-  oshrink <- 1L
+  # Setting oshrink = FALSE gives vanilla Nelder-Mead, i.e. the simplex is merely
+  # reflected expanded, or contracted without shrinking
+  oshrink <- TRUE
   # Dimensions of paramter space
   n <- length(par) 
   if (n == 1) 
@@ -142,7 +143,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   
   itc <- 0L # iteration counter
   while (nf < maxfeval && restarts < restarts.max && dist > ftol && simplex.size > stol) {
-    happy <- 0L  # `happy == 1` will indicate that new vertex is accepted
+    happy <- FALSE  # `happy == 1` will indicate that new vertex is accepted
     itc <- itc + 1L
     nonshrinkit <- TRUE
     
@@ -155,7 +156,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
 
     if (fr >= f[1] && fr < f[n]) {
       # Reflection was successful
-      happy <- 1L
+      happy <- TRUE
       xnew <- xr
       fnew <- fr
     } else if (fr < f[1]) { # if reflected point f(r) < f(old): EXPAND
@@ -166,11 +167,11 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       if (fe < fr) {
         xnew <- xe
         fnew <- fe
-        happy <- 1L
+        happy <- TRUE
       } else {
         xnew <- xr
         fnew <- fr
-        happy <- 1L
+        happy <- TRUE
       }
     } else if (fr >= f[n] && fr < f[n + 1]) {
       # OUTSIDE CONTRACTION
@@ -181,7 +182,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       if (fc <= fr) {
         xnew <- xc
         fnew <- fc
-        happy <- 1L
+        happy <- TRUE
       }
     } else if (fr >= f[n + 1]) {
       # INSIDE CONTRACTION
@@ -193,11 +194,11 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
       if (fc < f[n + 1]) {
         xnew <- xc
         fnew <- fc
-        happy <- 1L
+        happy <- TRUE
       }
     }
     # Test for sufficient decrease; do oriented shrink if necessary
-    if (happy == 1 && oshrink == 1L) {
+    if (happy && oshrink) {
       fbt <- mean(c(f[1:n], fnew))
       delfb <- fbt - fbc
       armtst <- alpha * sum(sgrad^2)
@@ -208,14 +209,14 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         # According to the original matlab code the instruction below must be:
         # sx=.5+sign(sgrad); sx=sign(sx);
         sx <- sign(0.5 + sign(sgrad))
-        happy <- 0L
+        happy <- FALSE
         V[, -1L] <- V[, 1L]
         diag(V[, -1L]) <- diag(V[, -1L]) - diams * sx[1L:n]
         nonshrinkit <- FALSE
       }
     }
     # New point accepted; remove old point and restart
-    if (happy == 1) {
+    if (happy) {
       if(nonshrinkit) {
         # Insert new vertex and reorder
         InsertAt <- which.max(fnew < f)
@@ -234,7 +235,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
         # Update centroid of the simplex
         xbar <- rowMeans(V[, 1:n])
       }
-    } else if (happy == 0 && restarts < restarts.max) {
+    } else if (!happy && restarts < restarts.max) {
       V[, -1] <- V[, 1] - sigma * (V[, -1] - V[, 1])
       for (j in 2:ncol(V)) f[j] <- fnmb(V[, j], ...)
       nf <- nf + n
