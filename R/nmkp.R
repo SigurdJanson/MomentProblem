@@ -51,17 +51,17 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # reflected expanded, or contracted without shrinking
   oshrink <- TRUE
   # Dimensions of paramter space
-  n <- length(par) 
+  n <- length(par)
   if (n == 1) 
     stop(call. = FALSE, "Use `optimize` for univariate optimization")
   if (n > 32) 
     warning("Nelder-Mead should not be used for high-dimensional optimization")
   
   # Basic Nelder-Mead transformation parameters
-  rho <- 1              # reflection  alpha
-  chi <- 1 + 2/n        # expansion   beta
-  gamma <- 0.75 - 1/2/n # contraction gamma
-  sigma <- 1 - 1/n      # shrinkage   delta
+  rho <- 1              # reflection  alpha (1)
+  chi <- 1 + 2/n        # expansion   beta (2)
+  gamma <- 0.75 - 1/2/n # contraction gamma (0.5)
+  sigma <- 1 - 1/n      # shrinkage   delta (0.5)
   
   # SETUP
   # Spatial distortion functions to handle box constraints
@@ -79,6 +79,14 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     gix[c3] <- lower[c3] + exp(x[c3])
     gix[c4] <- upper[c4] - exp(x[c4])
     gix
+  }
+  
+  getsimplexsize <- function(V, DiffTo1 = NULL) {
+    #Vold <- V # FOR TESTING ONLY
+    #if(!all(c2)) V <- apply(V, MARGIN = 2, ginv)
+    if (is.null(DiffTo1)) DiffTo1 <- V[, -1] - V[, 1]
+    size <- sum(abs(DiffTo1)) / max(1, sum(abs(V[, 1])))
+    return(size)
   }
   
   # Set variables required to handle box constraints
@@ -137,7 +145,8 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   xbar <- rowMeans(V[, 1:n]) # initial centroid of the simplex
   
   # Termination criteria (`nf` has been defined above)
-  simplex.size <- sum(abs(V[, -1] - V[, 1]))/max(1, sum(abs(V[, 1])))
+  ##/simplex.size <- sum(abs(V[, -1] - V[, 1]))/max(1, sum(abs(V[, 1])))
+  simplex.size <- getsimplexsize(V)
   dist <- f[n + 1] - f[1] # distance between f(highest) and f(lowest) vertex
   restarts <- 0L # number of restarts
   
@@ -199,8 +208,9 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     }
     # Test for sufficient decrease; do oriented shrink if necessary
     if (happy && oshrink) {
-      fbt <- mean(c(f[1:n], fnew))
-      delfb <- fbt - fbc
+      # Check if average function value has improved
+      #/fbt <- mean(c(f[1:n], fnew))
+      delfb <- mean(c(f[1:n], fnew)) - fbc #/fbt - fbc
       armtst <- alpha * sum(sgrad^2)
       if (delfb > -armtst/n) {
         if (trace) cat("Trouble - restarting: \n")
@@ -247,7 +257,8 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     v <- V[, -1] - V[, 1]
     delf <- f[-1] - f[1]
     diam <- sqrt(colSums(v^2))
-    simplex.size <- sum(abs(v))/max(1, sum(abs(V[, 1]))) #TODO: change simplex.size to rationale to Singer & Singer formula 16
+    ##/simplex.size <- sum(abs(v))/max(1, sum(abs(V[, 1]))) #TODO: change simplex.size to rationale to Singer & Singer formula 16
+    simplex.size <- getsimplexsize(V, v)
     f[is.nan(f)] <- Inf
     dist <- f[n + 1] - f[1]
     sgrad <- c(solve(t(v), delf))
@@ -260,6 +271,8 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   if (dist <= ftol || simplex.size <= stol) {
     conv <- 0L
     message <- "Successful convergence"
+    #if (simplex.size <= stol) print("simple") #TESTING
+    #else print(simplex.size)
   } else if (nf >= maxfeval) {
     conv <- 1L
     message <- "Maximum number of fevals exceeded"
@@ -275,4 +288,25 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
               convergence = conv, message = message))
 }
 
-
+#### Testing code --------------
+# rosbkext <- function(x) {
+#   # Extended Rosenbrock function
+#   n <- length(x)
+#   sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
+# }
+# 
+# np <- 6 #12
+# for (box in c(2, 4, 12, 24, 32, 64, 128)) {
+#   #set.seed(123)
+#   p0 <- rnorm(np)
+#   p0[p0 > +2] <- +2 - 1E-8
+#   p0[p0 < -2] <- -2 + 1E-8
+#   
+#   #box <- c(rep(box, np/2), rep(Inf, np/2))
+#   
+#   ctrl <- list(maxfeval = 5E4, tol = 1E-12)
+#   #o <- nmkp(fn = rosbkext, par = p0, lower = -2, upper = +box, control = ctrl)
+#   o <- nmkp(fn = rosbkext, par = p0, control = ctrl)
+#   print(o$message)
+#   cat("f(", format(o$par, digits = 2), ") =", format(o$value, digits=3), "\n")
+# }
