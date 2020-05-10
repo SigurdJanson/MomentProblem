@@ -1,0 +1,92 @@
+---
+title: "Analyze dfoptim::nmkb"
+author: "Dr. Jan Seifert"
+date: "6 5 2020"
+output: html_document
+bibliography: MomentProblem.bib
+csl: apa-6th-edition.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is a documentation to investigate some weird behaviour of `dfoptim::nmkb()`. It is hard to track down and I need this to wrap my head around it. I am aware that Nelder-Mead has its shortcomings [see e.g. @Han2006][@McKinnon1998].
+
+I will spare the world another description of the Nelder-Mead simplex algorithm. There are thousands of them out there. This text assumes that you are already familiar with that.
+
+
+
+## The Code
+
+What I find strange is that fact that the conversion into inflated space is only done once. The algorithm converts the starting point but none of the simplex transformation. To me. that does not sound right. Transforming only the starting point wihtout the simplex operation sounds to me like moving the starting point to another location and then operate in a linear space again. But, I know I need proof.
+
+From the algorithm I assume, that the algorithm works in the sense that it manages to stay inside the specified bounding box. But the simplex transformations are not equivlent to those in an unconstrained linear space. This, by itself, does not have to be a problem. If the algorithm handles a bounding box it has to make some change to the unconstrained logic to achieve that. But it leaves me with two questions:
+
+1. In what way does a "skewed" simplex still perform like a Nelder-Mead algorithm should? Does it still converge as good as the unconstrained version?
+
+
+## Out of Bounds
+
+
+When I use a starting value that has coordinates lying exactly on my upper or lower bound, `nmkb` complains and returns an error. As a result this is accepted. This, however, may be weird but is not exactly proof of an error.
+
+
+```{r}
+library(dfoptim)
+rastrigin <- function(x) 10*length(x) + sum((x)^2 - 10*cos(1*pi*(x))) 
+
+#ctrl <- list(maxfeval = 5E3) # increase termination criterion
+p0 <- c(142.4210952731664293, 2.9270682596834376, 24.5784783963463269,
+        227.2882090298226103, 181.2726664326037280, 125.3133597080013715)
+result <- nmkb(fn = rastrigin, par = p0, lower = -0.25, upper = 250) #, control = ctrl
+if(any(result$par >= 250 | result$par <= -0.25)) print("Out of bounds!")
+print(result$par, digits = 4)
+print(result$value, digits = 4)
+```
+
+
+
+## Exceptions
+
+Also odd that it throws exceptions out of the blue.
+
+```{r}
+library(dfoptim)
+rastrigin <- function(x) 10*length(x) + sum((x-1)^2 - 10*cos(1*pi*(x-1))) 
+
+ctrl <- list(maxfeval = 5E3) # increase termination criterion
+p0 <- c(0.47882726763965316, 0.87492221739048615, 0.00000001000000000,
+        0.00000001000000000, 0.00000001000000000, 0.23383589375063629)
+tryCatch({ 
+  result <- nmkb(fn = rastrigin, par = p0, lower = 0, upper = 64, control = ctrl)
+},  error = function(e) {
+    print(e$message)
+})
+```
+
+Further analyses suggest that the exception is caused when the simplex is shrunk. Of course, not every shrink operation degenerates the simplex. But most of 50 runs of the have given the same picture again and again. When the algorithm cannot converge without shrinking the simplex, it will throw an exception eventually.
+
+It seems like the statement `sx <- sign(0.5 * sign(sgrad))` in the shrink branch is the reason for the trouble. Not only is it suspicious because it can be reduced to `sx <- sign(sgrad)` without any loss. It is not what we can find in the [original MatLab code](https://archive.siam.org/books/kelley/fr18/OPT_CODE/nelder.m) where the statement `sx=.5+sign(sgrad); sx=sign(sx);` can be found. 
+
+In fact, when we change the assignment to `sx <- sign(0.5 + sign(sgrad))` the algorithm already works a lot better. 
+
+We have to make the same change to `dfoptim::nmk()` and `nmkb()`.
+
+But, in the end, this change cannot avoid the exception in all situations. According to @Kelley1999 nonsingularity of the simplex can be guaranteed for all operations except shrinking. The algorithm should be able to handle a degenerate simpelx properly, catch the error and restart with a new simplex.
+
+
+
+## The Bug Fix
+
+<!-- detach("package:vegan", unload=TRUE) -->
+
+
+
+<http://rmarkdown.rstudio.com>.
+
+ **Knit** 
+
+# References
+
+
