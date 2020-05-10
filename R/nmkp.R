@@ -17,7 +17,7 @@
 #' nmkp
 #' An implementation of the Nelder-Mead algorithm for derivative-free 
 #' optimization. This version refactors, optimises, corrects and extends 
-#' [dfoptim::nmk()][dfoptim::nmk()] and [dfoptim::nmkb()][dfoptim::nmkb()].
+#' [`dfoptim::nmk(`)] and [`dfoptim::nmkb()`].
 #' @usage nmkp(par, fn, lower=-Inf, upper=Inf, control = list(), ...)
 #' @param par A starting vector of parameter values. Must be feasible, i.e. 
 #' lie strictly between lower and upper bounds.
@@ -84,6 +84,20 @@
 #' Kelley, C. T. (1999). Iterative Methods for Optimization. Society for Industrial and Applied Mathematics. https://doi.org/10.1137/1.9781611970920
 #' Nelder, J. A., & Mead, R. (1965). A simplex method for function minimization. Computer Journal, 7, 308–313.
 #' Lagarias, J., Reeds, J., Wright, M., & Wright, P. (1998). Convergence Properties of the Nelder–Mead Simplex Method in Low Dimensions. SIAM Journal on Optimization, 9, 112–147. https://doi.org/10.1137/S1052623496303470
+#' @examples 
+#' rosbkext <- function(x){
+#'   # Extended Rosenbrock function
+#'   n <- length(x)
+#'   sum (100*(x[1:(n-1)]^2 - x[2:n])^2 + (x[1:(n-1)] - 1)^2)
+#' }
+#' 
+#' np <- 10
+#' set.seed(123)
+#' 
+#' p0 <- rnorm(np)
+#' xm1  <- nmkp(fn=rosbkext, par=p0) # maximum `fevals' is not sufficient to find correct minimum
+#' xm1b <- nmkp(fn=rosbkext, par=p0, lower=-2, upper=2)
+#' 
 nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # BASIC CONSTANTS THAT DETERMINE THE BEHAVIOUR OF THE ALGORITHM
   ctrl <- list(tol = 1e-06, maxfeval = min(5000, max(1500, 20 * length(par)^2)), 
