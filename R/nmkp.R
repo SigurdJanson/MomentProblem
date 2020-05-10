@@ -15,14 +15,66 @@
 
 
 #' nmkp
-#' Nelder-Mead with box constraints
-#' @param ... see https://rdrr.io/cran/dfoptim/man/nmkb.html
-#' @details see https://rdrr.io/cran/dfoptim/man/nmkb.html
-#' @note The parameters controlling the behaviour of the simplex are chosen
-#' according to Gao & Han (2010) instead of the original choice by Nelder & Mead.
-#' @source This function is a copy of dfoptim::nmkb(). This algorithm is based 
-#' on the [Matlab code of Prof. C.T. Kelley, given in his book "Iterative methods 
-#' for optimization"](https://archive.siam.org/books/kelley/fr18/OPT_CODE/nelder.m). 
+#' An implementation of the Nelder-Mead algorithm for derivative-free 
+#' optimization. This version refactors, optimises, corrects and extends 
+#' [dfoptim::nmk()][dfoptim::nmk()] and [dfoptim::nmkb()][dfoptim::nmkb()].
+#' @usage nmkp(par, fn, lower=-Inf, upper=Inf, control = list(), ...)
+#' @param par A starting vector of parameter values. Must be feasible, i.e. 
+#' lie strictly between lower and upper bounds.
+#' @param fn Nonlinear objective function that is to be optimized. A scalar 
+#' function that takes a real vector as argument and returns a scalar that 
+#' is the value of the function at that point (see details).
+#' @param lower,upper Lower/upper bounds on the parameters. A vector of 
+#' the same length as the parameters. If a single value is specified, it is 
+#' assumed that the same lower/upper bound applies to all parameters.
+#' @param control A list of control parameters. List entries must be named.
+#' See *Details* for more information.
+#' @param ... Additional arguments passed to `fn`.
+#' @details 
+#' If the arguments `lower` and `upper` are `+-Inf` this function runs an unconstrained 
+#' algorithm. With bounds it inflates the space and runs a traditional simplex search 
+#' in this inflated space. In other words, bounds are enforced by means of a parameter 
+#' transformation.
+#' 
+#' ## Control Arguments
+#' Argument control is a list specifing any changes to default values of 
+#' algorithm control parameters for the outer loop. Note that the names of 
+#' these must be specified completely. Partial matching will not work. 
+#' The list items are as follows:
+#' \describe{
+#'   \item{tol}{Convergence tolerance. Iteration is terminated when the 
+#'   absolute difference in function value between successive iteration 
+#'   is below tol. Default is 1.e-06.}
+#'   \item{maxfeval}{Maximum number of objective function evaluations 
+#'   allowed (in other words every call of `fn`). Default is 
+#'   `min(5000, max(1500, 20*length(par)^2))`.}
+#'   \item{regsimp}{A logical variable indicating whether the starting 
+#'   parameter configuration is a regular simplex. Default is TRUE.}
+#'   \item{maximize}{A logical variable indicating whether the objective 
+#'   function should be maximized. Default is FALSE.}
+#'   \item{restarts.max}{Maximum number of times the algorithm should be 
+#'   restarted before declaring failure. Default is 3.}
+#'   \item{trace}{A logical variable indicating whether the starting 
+#'   parameter configuration is a regular simplex. Default is FALSE.}
+#'   \item{adapt.behavior}{The parameters controlling the behaviour of the
+#'   simplex are chosen according to Gao & Han (2010) instead of the original
+#'   choice by Nelder & Mead.}
+#' }
+#' @return A list with the following components:
+#' \describe{
+#'   \item{par}{Best estimate of the parameter vector found by the algorithm.}
+#'   \item{value}{The value of the objective function at termination.}
+#'   \item{feval}{The number of times the objective `fn` was evaluated.}
+#'   \item{restarts}{The number of times the algorithm had to be restarted 
+#'   when it stagnated.}
+#'   \item{convergence}{An integer code indicating type of convergence. 
+#'   0 indicates successful convergence. Positive integer codes indicate 
+#'   failure to converge. The `message` will explain.}
+#'   \item{message}{Text message indicating the type of convergence or failure.}
+#' }
+#' @source This function is a heavily refactored copy of dfoptim::nmkb(). This 
+#' algorithm is based on the [Matlab code of Prof. C.T. Kelley, given in his book 
+#' "Iterative methods for optimization"](https://archive.siam.org/books/kelley/fr18/OPT_CODE/nelder.m). 
 #' It was implemented for R by Ravi Varadhan with permission of 
 #' Prof. Kelley and SIAM. However, there are some non-trivial modifications of 
 #' the algorithm made by Ravi Varadhan. Some refactoring and further modifications
@@ -35,7 +87,8 @@
 nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   # BASIC CONSTANTS THAT DETERMINE THE BEHAVIOUR OF THE ALGORITHM
   ctrl <- list(tol = 1e-06, maxfeval = min(5000, max(1500, 20 * length(par)^2)), 
-               regsimp = TRUE, maximize = FALSE, restarts.max = 3, trace = FALSE)
+               regsimp = TRUE, maximize = FALSE, restarts.max = 3, 
+               adapt.behavior = TRUE, trace = FALSE)
   namc <- match.arg(names(control), choices = names(ctrl), several.ok = TRUE)
   if (!all(namc %in% names(ctrl))) 
     stop("unknown names in 'control': ", namc[!(namc %in% names(ctrl))])
@@ -43,7 +96,6 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   ftol <- ctrl$tol
   stol <- 1E-6
   maxfeval <- ctrl$maxfeval
-  regsimp <- ctrl$regsimp
   restarts.max <- ctrl$restarts.max
   maximize <- ifelse(ctrl$maximize, -1, 1)
   trace <- ctrl$trace
@@ -58,10 +110,17 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
     warning("Nelder-Mead should not be used for high-dimensional optimization")
   
   # Basic Nelder-Mead transformation parameters
-  rho <- 1              # reflection  alpha (1)
-  chi <- 1 + 2/n        # expansion   beta (2)
-  gamma <- 0.75 - 1/2/n # contraction gamma (0.5)
-  sigma <- 1 - 1/n      # shrinkage   delta (0.5)
+  if (ctrl$adapt.behavior) {
+    rho <- 1              # reflection  alpha
+    chi <- 1 + 2/n        # expansion   beta
+    gamma <- 0.75 - 1/2/n # contraction gamma
+    sigma <- 1 - 1/n      # shrinkage   delta
+  } else {
+    rho <- 1
+    chi <- 2
+    gamma <- 0.5
+    sigma <- 0.5
+  }
   
   # SETUP
   # Spatial distortion functions to handle box constraints
@@ -121,7 +180,7 @@ nmkp <- function (par, fn, lower = -Inf, upper = Inf, control = list(), ...) {
   V[, 1] <- x0
   scale <- max(1, sqrt(sum(x0^2)))
 
-  if (regsimp) { # Create regular simplex
+  if (ctrl$regsimp) { # Create regular simplex
     alpha <- scale/(n * sqrt(2)) * c(sqrt(n + 1) + n - 1, sqrt(n + 1) - 1)
     V[, -1] <- (x0 + alpha[2])
     diag(V[, -1]) <- x0[1:n] + alpha[1]
