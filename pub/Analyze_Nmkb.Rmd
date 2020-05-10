@@ -11,7 +11,7 @@ csl: apa-6th-edition.csl
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This is a documentation to investigate some weird behaviour of `dfoptim::nmkb()`. It is hard to track down and I need this to wrap my head around it. I am aware that Nelder-Mead has its shortcomings [see e.g. @Han2006][@McKinnon1998].
+This is a documentation to investigate some weird behaviour of `dfoptim::nmkb()`. It is hard to track down and I need this to wrap my head around it. I am aware that Nelder-Mead has its shortcomings [see e.g. @Han2006; @McKinnon1998].
 
 I will spare the world another description of the Nelder-Mead simplex algorithm. There are thousands of them out there. This text assumes that you are already familiar with that.
 
@@ -26,24 +26,59 @@ From the algorithm I assume, that the algorithm works in the sense that it manag
 1. In what way does a "skewed" simplex still perform like a Nelder-Mead algorithm should? Does it still converge as good as the unconstrained version?
 
 
-## Out of Bounds
-
-
-When I use a starting value that has coordinates lying exactly on my upper or lower bound, `nmkb` complains and returns an error. As a result this is accepted. This, however, may be weird but is not exactly proof of an error.
-
+To demonstrate everthing I use the dfoptim package in its version "2018.2-1" and these objective functions.
 
 ```{r}
 library(dfoptim)
 rastrigin <- function(x) 10*length(x) + sum((x)^2 - 10*cos(1*pi*(x))) 
-
-#ctrl <- list(maxfeval = 5E3) # increase termination criterion
-p0 <- c(142.4210952731664293, 2.9270682596834376, 24.5784783963463269,
-        227.2882090298226103, 181.2726664326037280, 125.3133597080013715)
-result <- nmkb(fn = rastrigin, par = p0, lower = -0.25, upper = 250) #, control = ctrl
-if(any(result$par >= 250 | result$par <= -0.25)) print("Out of bounds!")
-print(result$par, digits = 4)
-print(result$value, digits = 4)
 ```
+
+
+
+## Out of Bounds
+
+When I use a starting value that has coordinates lying exactly on my upper or lower bound, `nmkb` complains and returns an error. 
+
+```{r}
+OnBound <- -0.2500
+p0 <- c(OnBound, 5.987e-05, -5.863e-05, 8.603e-06, OnBound, OnBound)
+tryCatch({ 
+  result <- nmkb(fn = rastrigin, par = p0, lower = -0.25, upper = 250)
+},  error = function(e) {
+    print(e$message)
+})
+```
+
+Not only does it return an error. It does not handle it correctly, too. The reason is that nmkb does not accept starting values that lie exactly on the bounds which is the lower bound of -0.25 in this case. Let us increase the values just a tiny bit and see what happens:
+
+```{r}
+OnBound <- -0.2500 + sqrt(.Machine$double.eps)
+p0 <- c(OnBound, 5.987e-05, -5.863e-05, 8.603e-06, OnBound, OnBound)
+tryCatch({ 
+  result <- nmkb(fn = rastrigin, par = p0, lower = -0.25, upper = 250)
+},  error = function(e) {
+    print(e$message)
+})
+```
+
+This happens because of the way nmkb handles the constraint. If a parameter values lies on exactly the boundary it will be transformed to `Inf`. It is most likely that your objective function cannot handle that and returns either `Ìnf` or `NaN`.
+
+But let us make it weirder. Let us otimise this:
+
+```{r}
+OnBound <- -0.2500
+p0 <- c(OnBound, 5.987e-05, -5.863e-05, 8.603e-06, OnBound, OnBound)
+p1 <- c(142.4210952731664293, 2.9270682596834376, 24.5784783963463269,
+        227.2882090298226103, 181.2726664326037280, 125.3133597080013715)
+result <- nmkb(fn = rastrigin, par = p1, lower = -0.25, upper = 250)
+if (isTRUE(all.equal(p0, result$par))) {
+  print("Weirdity alert!!") 
+  print(p0, digits = 4)
+  print(result$par, digits = 4)
+}
+```
+
+`nmkb()` does not work with this value as starting point but it accepts it as optimum. That may nothing more than a peculiarity as long as the algorithm does what it is supposed to do, but is not consistent behaviour and certainly not good code.
 
 
 
@@ -65,13 +100,13 @@ tryCatch({
 })
 ```
 
-Further analyses suggest that the exception is caused when the simplex is shrunk. Of course, not every shrink operation degenerates the simplex. But most of 50 runs of the have given the same picture again and again. When the algorithm cannot converge without shrinking the simplex, it will throw an exception eventually.
+Further analyses suggest that the exception is caused after the simplex was udnergoing a shrink operation. Not every shrink operation degenerates the simplex. But most of 50 runs of the have given the same picture again and again. When the algorithm cannot converge without shrinking the simplex, it will throw an exception eventually.
 
 It seems like the statement `sx <- sign(0.5 * sign(sgrad))` in the shrink branch is the reason for the trouble. Not only is it suspicious because it can be reduced to `sx <- sign(sgrad)` without any loss. It is not what we can find in the [original MatLab code](https://archive.siam.org/books/kelley/fr18/OPT_CODE/nelder.m) where the statement `sx=.5+sign(sgrad); sx=sign(sx);` can be found. 
 
-In fact, when we change the assignment to `sx <- sign(0.5 + sign(sgrad))` the algorithm already works a lot better. 
+In fact, when we change the assignment to `sx <- sign(0.5 + sign(sgrad))` the algorithm already works a lot better. We have to make the same change to `dfoptim::nmk()` and `nmkb()`.
 
-We have to make the same change to `dfoptim::nmk()` and `nmkb()`.
+TODO: show performance here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 But, in the end, this change cannot avoid the exception in all situations. According to @Kelley1999 nonsingularity of the simplex can be guaranteed for all operations except shrinking. The algorithm should be able to handle a degenerate simpelx properly, catch the error and restart with a new simplex.
 
@@ -82,10 +117,10 @@ But, in the end, this change cannot avoid the exception in all situations. Accor
 <!-- detach("package:vegan", unload=TRUE) -->
 
 
+## Comparison Bounded vs Unbounded
 
-<http://rmarkdown.rstudio.com>.
 
- **Knit** 
+
 
 # References
 
